@@ -8,19 +8,20 @@ const API = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5001";
 export default function Home() {
   const router = useRouter();
 
-  const [captchaToken, setCaptchaToken]   = useState("");
-  const [captchaImage, setCaptchaImage]   = useState("");
-  const [answer, setAnswer]               = useState("");
-  const [error, setError]                 = useState("");
-  const [loading, setLoading]             = useState(false);
-  const [imageLoading, setImageLoading]   = useState(true);
+  const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaImage, setCaptchaImage] = useState("");
+  const [answer, setAnswer] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true);
+  const [dots, setDots] = useState("");
 
   const fetchCaptcha = useCallback(async () => {
     setImageLoading(true);
     setAnswer("");
     setError("");
     try {
-      const res  = await fetch(`${API}/api/captcha/generate`);
+      const res = await fetch(`${API}/api/captcha/generate`);
       const data = await res.json();
       setCaptchaToken(data.token);
       setCaptchaImage(data.image);
@@ -33,22 +34,26 @@ export default function Home() {
 
   useEffect(() => { fetchCaptcha(); }, [fetchCaptcha]);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setDots(d => d.length >= 3 ? "" : d + ".");
+    }, 500);
+    return () => clearInterval(interval);
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!answer.trim()) return;
     setLoading(true);
     setError("");
-
     try {
-      const res  = await fetch(`${API}/api/captcha/verify`, {
+      const res = await fetch(`${API}/api/captcha/verify`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token: captchaToken, answer: answer.trim() }),
       });
       const data = await res.json();
-
       if (data.success) {
-        // Store session token — used instead of JWT
         sessionStorage.setItem("session_token", data.session_token);
         router.push("/select");
       } else {
@@ -63,167 +68,63 @@ export default function Home() {
   };
 
   return (
-    <div
-      className="page-content"
-      style={{
-        minHeight: "100vh",
-        backgroundImage: "url('/images/home.jpg')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-        backgroundAttachment: "fixed",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <div
-        style={{
-          background: "rgba(10, 10, 30, 0.82)",
-          border: "1px solid rgba(255,255,255,0.12)",
-          borderRadius: "24px",
-          padding: "48px 40px",
-          maxWidth: "480px",
-          width: "90%",
+    <div className="c-root">
+        <div style={{
+          fontFamily: "'Orbitron', sans-serif",
+          fontSize: "clamp(2rem, 5vw, 3.2rem)",
+          fontWeight: 900,
+          color: "#38bdf8",
+          letterSpacing: "0.12em",
+          textShadow: "0 0 30px rgba(56,189,248,0.5)",
+          whiteSpace: "nowrap",
           textAlign: "center",
-          color: "white",
-          boxShadow: "0 25px 60px rgba(0,0,0,0.6)",
-        }}
-      >
-        <h1
-          style={{
-            fontWeight: 800,
-            fontSize: "2rem",
-            marginBottom: "8px",
-            background: "linear-gradient(90deg, #a78bfa, #ec4899, #22d3ee)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-          }}
-        >
-          Sorting Quest
-        </h1>
-        <p style={{ color: "rgba(255,255,255,0.6)", marginBottom: "32px" }}>
-          Prove you&apos;re human to play
-        </p>
-
-        {/* Captcha image */}
-        <div
-          style={{
-            background: "rgba(255,255,255,0.05)",
-            border: "2px solid rgba(255,255,255,0.15)",
-            borderRadius: "16px",
-            padding: "20px",
-            marginBottom: "20px",
-          }}
-        >
-          <p style={{ color: "rgba(255,255,255,0.5)", fontSize: "0.82rem", marginBottom: "12px" }}>
-            Type the characters you see below
-          </p>
-
-          {imageLoading ? (
-            <div style={{ height: "70px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <div className="spinner-border text-light" style={{ width: "2rem", height: "2rem" }} />
-            </div>
-          ) : (
-            <img
-              src={captchaImage}
-              alt="captcha"
-              style={{
-                borderRadius: "10px",
-                border: "2px solid rgba(255,255,255,0.2)",
-                display: "block",
-                margin: "0 auto",
-                userSelect: "none",
-                pointerEvents: "none",
-              }}
-            />
-          )}
-
-          <button
-            type="button"
-            onClick={fetchCaptcha}
-            style={{
-              background: "none",
-              border: "none",
-              color: "#a78bfa",
-              cursor: "pointer",
-              fontSize: "0.82rem",
-              marginTop: "10px",
-              textDecoration: "underline",
-            }}
-          >
-            🔄 Refresh captcha
-          </button>
+        }}>
+          SORTING QUIZ
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <input
-            type="text"
-            maxLength={5}
-            autoComplete="off"
-            autoCorrect="off"
-            autoCapitalize="characters"
-            spellCheck={false}
-            value={answer}
-            onChange={(e) => setAnswer(e.target.value.toUpperCase())}
-            placeholder="Enter 5 characters"
-            style={{
-              width: "100%",
-              padding: "14px 20px",
-              borderRadius: "12px",
-              border: "2px solid rgba(255,255,255,0.2)",
-              background: "rgba(255,255,255,0.08)",
-              color: "white",
-              fontSize: "1.3rem",
-              textAlign: "center",
-              letterSpacing: "0.4em",
-              fontWeight: 700,
-              outline: "none",
-              marginBottom: "16px",
-            }}
-            required
-            autoFocus
-          />
+        {/* circle + rings wrapper */}
+        <div className="c-circle-wrap">
+          <div className="c-ring-outer" />
+          <div className="c-ring-mid" />
 
-          {error && (
-            <div
-              style={{
-                background: "rgba(239,68,68,0.2)",
-                border: "1px solid #ef4444",
-                borderRadius: "10px",
-                padding: "10px",
-                marginBottom: "16px",
-                color: "#fca5a5",
-                fontSize: "0.9rem",
-              }}
-            >
-              {error}
+          <div className="c-card">
+            <div className="c-pulse" />
+            <div className="c-subtitle">verify humanity{dots}</div>
+
+            <div className="c-captcha-ring">
+              {imageLoading ? (
+                <div className="c-spinner" style={{ width: 24, height: 24 }} />
+              ) : (
+                <img src={captchaImage} alt="captcha" />
+              )}
             </div>
-          )}
 
-          <button
-            type="submit"
-            disabled={loading || answer.length < 5}
-            style={{
-              width: "100%",
-              padding: "14px",
-              borderRadius: "50px",
-              border: "none",
-              background: answer.length === 5
-                ? "linear-gradient(135deg, #6366f1, #ec4899)"
-                : "rgba(255,255,255,0.1)",
-              color: "white",
-              fontWeight: 700,
-              fontSize: "1rem",
-              cursor: answer.length === 5 ? "pointer" : "default",
-              transition: "all 0.3s",
-              boxShadow: answer.length === 5 ? "0 8px 24px rgba(99,102,241,0.4)" : "none",
-            }}
-          >
-            {loading ? "Verifying..." : "I'm Human — Play Now →"}
-          </button>
-        </form>
+            <button className="c-refresh" type="button" onClick={fetchCaptcha}>
+              ↺ new code
+            </button>
+
+            <form onSubmit={handleSubmit} style={{ width: "100%" }}>
+              <input
+                className="c-input"
+                type="text"
+                maxLength={5}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="characters"
+                spellCheck={false}
+                value={answer}
+                onChange={(e) => setAnswer(e.target.value.toUpperCase())}
+                placeholder="· · · · ·"
+                required
+                autoFocus
+              />
+              {error && <div className="c-error">⚠ {error}</div>}
+              <button className="c-btn" type="submit" disabled={loading || answer.length < 5}>
+                {loading ? <><span className="c-spinner" />verifying</> : "enter the quest →"}
+              </button>
+            </form>
+          </div>
+        </div>
       </div>
-    </div>
   );
 }
