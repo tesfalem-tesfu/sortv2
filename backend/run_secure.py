@@ -93,7 +93,8 @@ def main():
     
     try:
         # Use production WSGI server
-        from gunicorn import app as gunicorn_app
+        import subprocess
+        import sys
         
         # Production configuration
         workers = 4
@@ -102,17 +103,19 @@ def main():
         max_requests = 1000
         timeout = 120
         
-        app.run(
-            host="0.0.0.0",
-            port=5001,
-            debug=False,
-            workers=workers,
-            worker_class=worker_class,
-            worker_connections=worker_connections,
-            max_requests=max_requests,
-            timeout=timeout,
-            ssl_context='adhoc'  # Use self-signed cert for testing
-        )
+        # Run with Gunicorn command line
+        cmd = [
+            "gunicorn",
+            "--bind", "0.0.0.0:5001",
+            "--workers", str(workers),
+            "--worker-class", worker_class,
+            "--max-requests", str(max_requests),
+            "--timeout", str(timeout),
+            "app_secure:app"
+        ]
+        
+        print(f"🚀 Starting: {' '.join(cmd)}")
+        sys.exit(subprocess.call(cmd))
         
     except ImportError:
         print("⚠️  Gunicorn not available, using Flask development server")
