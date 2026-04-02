@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
 import { useSearchParams } from "next/navigation";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5001";
+const API = process.env.NEXT_PUBLIC_API_URL || "https://sortv2-1.onrender.com";
 const QUESTION_TIME = 30;
 
 async function apiCall(url: string, options: RequestInit = {}) {
