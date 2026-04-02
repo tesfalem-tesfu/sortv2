@@ -1,0 +1,8 @@
+# Render Build Configuration
+# Force Python 3.11.9 and use Poetry
+
+[build]
+python = "3.11.9"
+
+[python]
+version = "3.11.9"

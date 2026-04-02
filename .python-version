@@ -1,0 +1,4 @@
+# Force Python 3.11.9 for all deployments
+# This overrides Render's default Python version
+
+python-3.11.9
