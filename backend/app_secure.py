@@ -169,13 +169,29 @@ def refresh_token():
 # CAPTCHA SYSTEM (Enhanced)
 # ────────────────────────────────────────────────
 
+def get_font(size: int):
+    font_names = [
+        "arial.ttf", "calibri.ttf", "tahoma.ttf", 
+        "C:\\Windows\\Fonts\\arial.ttf", "C:\\Windows\\Fonts\\calibri.ttf", "C:\\Windows\\Fonts\\tahoma.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+        "/System/Library/Fonts/Supplemental/Arial.ttf"
+    ]
+    for name in font_names:
+        try:
+            return ImageFont.truetype(name, size)
+        except Exception:
+            continue
+    return ImageFont.load_default()
+
 def _generate_captcha_image(text: str) -> str:
-    """Generate a secure captcha image."""
-    width, height = 200, 70
-    img = Image.new("RGB", (width, height), color=(245, 245, 255))
+    """Generate a secure captcha image with distortion."""
+    width, height = 400, 130
+    # White background as requested
+    img = Image.new("RGB", (width, height), color=(255, 255, 255))
     draw = ImageDraw.Draw(img)
 
-    # Background noise lines
+    # Background noise lines (subtle)
     for _ in range(8):
         x1, y1 = random.randint(0, width), random.randint(0, height)
         x2, y2 = random.randint(0, width), random.randint(0, height)
@@ -183,36 +199,51 @@ def _generate_captcha_image(text: str) -> str:
             random.randint(150, 220),
             random.randint(150, 220),
             random.randint(150, 220),
-        ), width=1)
+        ), width=2)
 
     # Background dots
-    for _ in range(80):
+    for _ in range(120):
         x, y = random.randint(0, width), random.randint(0, height)
-        draw.ellipse([x, y, x+2, y+2], fill=(
-            random.randint(100, 200),
-            random.randint(100, 200),
-            random.randint(100, 200),
+        draw.ellipse([x, y, x+3, y+3], fill=(
+            random.randint(120, 200),
+            random.randint(120, 200),
+            random.randint(120, 200),
         ))
 
-    # Draw each character with random offset and color
+    # Draw each character with random offset and colorful text
     x_offset = 20
     for char in text:
-        color = (
-            random.randint(20, 100),
-            random.randint(20, 100),
-            random.randint(20, 100),
-        )
-        y_offset = random.randint(10, 25)
-        font_size = random.randint(28, 36)
-        try:
-            font = ImageFont.truetype("arial.ttf", font_size)
-        except Exception:
-            font = ImageFont.load_default()
-        draw.text((x_offset, y_offset), char, font=font, fill=color)
-        x_offset += random.randint(28, 38)
+        # Use darker colorful text for contrast against white background
+        color = random.choice([
+            (20, 30, 160),    # deep blue
+            (110, 20, 160),   # dark purple
+            (160, 30, 20),    # dark red
+            (20, 120, 60),    # dark green
+            (0, 0, 0),        # black
+        ])
+        
+        # Huge font size for ultimate visibility
+        font_size = random.randint(85, 110)
+        font = get_font(font_size)
+        
+        # Render character onto a transparent layer for distortion/rotation
+        char_img = Image.new("RGBA", (140, 140), (0, 0, 0, 0))
+        char_draw = ImageDraw.Draw(char_img)
+        char_draw.text((10, 10), char, font=font, fill=color)
+        
+        # Apply rotational distortion
+        angle = random.randint(-35, 35)
+        char_img = char_img.rotate(angle, resample=Image.BICUBIC, expand=1)
+        
+        # Randomize Y offset to make characters jump up and down
+        y_offset = random.randint(-15, 15)
+        
+        # Paste onto main image
+        img.paste(char_img, (x_offset, y_offset), char_img)
+        x_offset += random.randint(65, 75)
 
-    # Slight blur for distortion
-    img = img.filter(ImageFilter.GaussianBlur(radius=0.8))
+    # Add a slight blur to obscure readability for bots
+    img = img.filter(ImageFilter.GaussianBlur(radius=0.7))
 
     buf = BytesIO()
     img.save(buf, format="PNG")
@@ -222,12 +253,12 @@ def _generate_captcha_image(text: str) -> str:
 @limiter.limit("30 per minute")
 def generate_captcha():
     """Generate secure captcha."""
-    # 5-character alphanumeric (no ambiguous chars)
-    chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+    # 5-character alphanumeric mixed case (exchuding ambiguous chars)
+    chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789"
     text = "".join(random.choices(chars, k=5))
     token = str(uuid.uuid4())
 
-    captcha_store[token] = text.upper()
+    captcha_store[token] = text
 
     # Clean old tokens if store gets too large
     if len(captcha_store) > 1000:
@@ -258,7 +289,7 @@ def verify_captcha():
     
     # Sanitize inputs
     token = sanitize_input(str(data.get("token", "")))
-    answer = sanitize_input(str(data.get("answer", ""))).upper().strip()
+    answer = sanitize_input(str(data.get("answer", ""))).strip()
 
     expected = captcha_store.get(token)
 

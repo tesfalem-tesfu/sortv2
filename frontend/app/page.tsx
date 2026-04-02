@@ -10,6 +10,7 @@ export default function Home() {
 
   const [captchaToken, setCaptchaToken] = useState("");
   const [captchaImage, setCaptchaImage] = useState("");
+  const [captchaQuestion, setCaptchaQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -24,7 +25,11 @@ export default function Home() {
       const res = await fetch(`${API}/api/captcha/generate`);
       const data = await res.json();
       setCaptchaToken(data.token);
-      setCaptchaImage(data.image);
+      if (data.type === "math") {
+        setCaptchaQuestion(data.question);
+      } else {
+        setCaptchaImage(data.image);
+      }
     } catch {
       setError("Cannot connect to server.");
     } finally {
@@ -110,10 +115,10 @@ export default function Home() {
                 maxLength={5}
                 autoComplete="off"
                 autoCorrect="off"
-                autoCapitalize="characters"
+                autoCapitalize="off"
                 spellCheck={false}
                 value={answer}
-                onChange={(e) => setAnswer(e.target.value.toUpperCase())}
+                onChange={(e) => setAnswer(e.target.value)}
                 placeholder="· · · · ·"
                 required
                 autoFocus
