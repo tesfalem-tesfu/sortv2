@@ -403,7 +403,7 @@ a:hover {
 }
 
 .c-captcha-ring {
-  width: 120px; height: 120px;
+  width: 140px; height: 140px;
   border-radius: 50%;
   border: 2px solid rgba(56,189,248,0.5);
   box-shadow: 0 0 16px rgba(56,189,248,0.2), inset 0 0 20px rgba(0,0,0,0.5);
@@ -417,7 +417,7 @@ a:hover {
 }
 
 .c-captcha-ring img {
-  width: 100px;
+  width: 110px;
   height: auto;
   border-radius: 50%;
   user-select: none;
@@ -531,6 +531,6 @@ a:hover {
   .c-card { width: 300px; height: 300px; padding: 28px 30px; }
   .c-ring-outer { width: 330px; height: 330px; }
   .c-ring-mid   { width: 360px; height: 360px; }
-  .c-captcha-ring { width: 90px; height: 90px; }
-  .c-captcha-ring img { width: 74px; }
+  .c-captcha-ring { width: 120px; height: 120px; }
+  .c-captcha-ring img { width: 90px; }
 }
