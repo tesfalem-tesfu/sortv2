@@ -1,0 +1,3 @@
+# This file disables Poetry
+# When poetry.lock exists but pyproject.toml doesn't, Poetry is disabled
+# Render will fall back to requirements.txt
