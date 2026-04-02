@@ -60,7 +60,7 @@ def security_headers(response):
 
 def _generate_captcha_image(text: str) -> str:
     """Generate a distorted image captcha and return as base64 PNG."""
-    width, height = 200, 70
+    width, height = 280, 90
     img = Image.new("RGB", (width, height), color=(245, 245, 255))
     draw = ImageDraw.Draw(img)
 
@@ -86,22 +86,24 @@ def _generate_captcha_image(text: str) -> str:
     # Draw each character with random offset and color
     x_offset = 20
     for char in text:
+        # Use much darker colors for better visibility
         color = (
-            random.randint(20, 100),
-            random.randint(20, 100),
-            random.randint(20, 100),
+            random.randint(0, 30),
+            random.randint(0, 30),
+            random.randint(0, 30),
         )
-        y_offset = random.randint(10, 25)
-        font_size = random.randint(28, 36)
+        y_offset = random.randint(15, 25)
+        # Much larger font size for visibility
+        font_size = random.randint(50, 60)
         try:
             font = ImageFont.truetype("arial.ttf", font_size)
         except Exception:
             font = ImageFont.load_default()
         draw.text((x_offset, y_offset), char, font=font, fill=color)
-        x_offset += random.randint(28, 38)
+        x_offset += random.randint(30, 35)
 
-    # Slight blur for distortion
-    img = img.filter(ImageFilter.GaussianBlur(radius=0.8))
+    # Remove blur for better readability
+    # img = img.filter(ImageFilter.GaussianBlur(radius=0.8))
 
     buf = BytesIO()
     img.save(buf, format="PNG")
