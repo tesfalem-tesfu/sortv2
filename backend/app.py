@@ -265,54 +265,7 @@ def _generate_question(category: str) -> dict:
         return {"id": _fake_id(shuffled), "question": "Sort the days of the week correctly (start Monday)",
                 "items": shuffled, "answer": ",".join(days), "category": category}
 
-    if category == "bubble_sort":
-        size = random.randint(4, 7)
-        nums = random.sample(range(1, 100), size)
-        one_pass = nums[:]
-        for i in range(len(one_pass) - 1):
-            if one_pass[i] > one_pass[i + 1]:
-                one_pass[i], one_pass[i + 1] = one_pass[i + 1], one_pass[i]
-        return {"id": _fake_id(nums), "question": "Bubble Sort: arrange so the largest number bubbles to the end (one pass)",
-                "items": [str(n) for n in nums], "answer": ",".join(str(n) for n in one_pass), "category": category}
-
-    if category == "selection_sort":
-        size = random.randint(4, 7)
-        nums = random.sample(range(1, 100), size)
-        min_val = min(nums); rest = nums[:]; rest.remove(min_val)
-        return {"id": _fake_id(nums), "question": "Selection Sort: move the smallest number to the front (one pass)",
-                "items": [str(n) for n in nums], "answer": ",".join(str(n) for n in [min_val] + rest), "category": category}
-
-    if category == "insertion_sort":
-        size = random.randint(4, 7)
-        nums = random.sample(range(1, 100), size)
-        arr = nums[:]
-        for i in range(1, len(arr)):
-            key = arr[i]; j = i - 1
-            while j >= 0 and arr[j] > key:
-                arr[j + 1] = arr[j]; j -= 1
-            arr[j + 1] = key
-        return {"id": _fake_id(nums), "question": "Insertion Sort: sort by inserting each element into its correct position",
-                "items": [str(n) for n in nums], "answer": ",".join(str(n) for n in arr), "category": category}
-
-    if category == "merge_sort":
-        size = random.randint(4, 8)
-        nums = random.sample(range(1, 100), size)
-        mid = len(nums) // 2
-        left = sorted(nums[:mid]); right = sorted(nums[mid:])
-        merged = sorted(left + right); display = left + right
-        return {"id": _fake_id(display),
-                "question": f"Merge Sort: merge [{','.join(map(str,left))}] and [{','.join(map(str,right))}]",
-                "items": [str(n) for n in display], "answer": ",".join(str(n) for n in merged), "category": category}
-
-    if category == "quick_sort":
-        size = random.randint(4, 7)
-        nums = random.sample(range(1, 100), size)
-        pivot = nums[0]
-        less = [x for x in nums[1:] if x <= pivot]
-        greater = [x for x in nums[1:] if x > pivot]
-        return {"id": _fake_id(nums), "question": f"Quick Sort: partition around pivot {pivot}",
-                "items": [str(n) for n in nums], "answer": ",".join(str(n) for n in less + [pivot] + greater), "category": category}
-
+    # Default to numbers_asc if category not found
     return _generate_question("numbers_asc")
 
 

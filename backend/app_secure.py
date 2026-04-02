@@ -294,10 +294,9 @@ def get_questions():
     
     # Randomly select category for variety
     import random
+    # Only free play categories - no algorithm sorting
     all_categories = [
-        'numbers_asc', 'numbers_desc', 'letters_asc', 'letters_desc', 
-        'days', 'bubble_sort', 'selection_sort', 
-        'insertion_sort', 'merge_sort', 'quick_sort'
+        'numbers_asc', 'numbers_desc', 'letters_asc', 'letters_desc', 'days'
     ]
     
     # 70% chance to use requested category, 30% chance for random different category

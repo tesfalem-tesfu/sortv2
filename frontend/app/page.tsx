@@ -55,7 +55,7 @@ export default function Home() {
       const data = await res.json();
       if (data.success) {
         sessionStorage.setItem("session_token", data.session_token);
-        router.push("/select");
+        router.push("/game?mode=numbers_asc");
       } else {
         setError(data.msg || "Incorrect. Try again.");
         fetchCaptcha();

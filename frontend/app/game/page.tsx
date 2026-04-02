@@ -26,11 +26,6 @@ function playTone(type) {
 }
 
 const ALGO_LABELS = {
-  bubble_sort:    { name:"Bubble Sort",    icon:"🫧", color:"#38bdf8", glow:"rgba(56,189,248,0.4)" },
-  selection_sort: { name:"Selection Sort", icon:"🎯", color:"#a855f7", glow:"rgba(168,85,247,0.4)" },
-  insertion_sort: { name:"Insertion Sort", icon:"🃏", color:"#fb923c", glow:"rgba(251,146,60,0.4)" },
-  merge_sort:     { name:"Merge Sort",     icon:"🔀", color:"#4ade80", glow:"rgba(74,222,128,0.4)" },
-  quick_sort:     { name:"Quick Sort",     icon:"⚡", color:"#facc15", glow:"rgba(250,204,21,0.4)" },
   numbers_asc:    { name:"Free Play",      icon:"🎮", color:"#22d3ee", glow:"rgba(34,211,238,0.4)" },
   numbers_desc:   { name:"Free Sort",      icon:"🔢", color:"#22d3ee", glow:"rgba(34,211,238,0.4)" },
   letters_asc:    { name:"Letters A-Z",    icon:"🔤", color:"#c084fc", glow:"rgba(192,132,252,0.4)" },
@@ -39,22 +34,16 @@ const ALGO_LABELS = {
 };
 
 const ALGO_ACTIONS = {
-  bubble_sort:    { hint:"Select a card, then Swap or Pass", actionBtn:"🔄 Swap" },
-  selection_sort: { hint:"Click smallest, then Place Min",   actionBtn:"⬅ Place Min" },
-  insertion_sort: { hint:"Select a card, then Insert left",  actionBtn:"📌 Insert" },
-  merge_sort:     { hint:"Arrange in sorted order",          actionBtn:"🔀 Merge" },
-  quick_sort:     { hint:"Click pivot, then Partition",      actionBtn:"⚡ Partition" },
-  numbers_asc:    { hint:"",                                   actionBtn:"🔄 Swap" },
-  numbers_desc:   { hint:"",                                   actionBtn:"🔄 Swap" },
-  letters_asc:    { hint:"",                                   actionBtn:"🔄 Swap" },
-  letters_desc:   { hint:"",                                   actionBtn:"🔄 Swap" },
-  days:           { hint:"",                                   actionBtn:"🔄 Swap" },
+    numbers_asc:    { hint:"",                                   actionBtn:"🔄 Swap" },
+    numbers_desc:   { hint:"",                                   actionBtn:"🔄 Swap" },
+    letters_asc:    { hint:"",                                   actionBtn:"🔄 Swap" },
+    letters_desc:   { hint:"",                                   actionBtn:"🔄 Swap" },
+    days:           { hint:"",                                   actionBtn:"🔄 Swap" },
 };
 
 
 const ALL_CATEGORIES = [
-  "numbers_asc","numbers_desc","letters_asc","letters_desc",
-  "days","bubble_sort","selection_sort","insertion_sort","merge_sort","quick_sort"
+  "numbers_asc","numbers_desc","letters_asc","letters_desc","days"
 ];
 function randomCategory() { return ALL_CATEGORIES[Math.floor(Math.random()*ALL_CATEGORIES.length)]; }
 
@@ -129,14 +118,19 @@ function Game() {
   }, [mode, currentCategory]);
 
   useEffect(() => { if(!mounted)return; if(!sessionStorage.getItem("session_token"))return; fetchQuestion(); }, [mounted,mode,fetchQuestion]);
+  useEffect(() => { 
+    if(!mounted || currentIndex === 0) return; // Don't fetch on initial load
+    fetchQuestion(); 
+  }, [currentIndex,fetchQuestion,mounted,currentCategory]);
 
   const submit = useCallback(() => {
     if(!currentQuestion||feedback)return;
     apiCall(API+"/api/game/submit",{method:"POST",body:JSON.stringify({category:currentQuestion.category,original_items:currentQuestion.items,answer:items,session_token:sessionStorage.getItem("session_token")})})
     .then(r=>r.json()).then(data=>{
       const isCorrect=data.correct;
-      setFeedback(isCorrect?"correct":"wrong");setCorrectOrder(data.correct_order||[]);setTotalAnswered(p=>p+1);
+      setFeedback(isCorrect?"correct":"wrong");setCorrectOrder(data.correct_order||[]);
       if(isCorrect){
+        setTotalAnswered(p=>p+1); // Only increment for correct answers
         setScore(s=>{const ns=s+10;if(ns>Number(sessionStorage.getItem("highScore")||"0")){sessionStorage.setItem("highScore",String(ns));setHighScore(ns);}return ns;});
         setStreak(p=>{const n=p+1;sessionStorage.setItem("streak",String(n));return n;});
         confetti({particleCount:180,spread:100,origin:{y:0.6}});
@@ -206,7 +200,7 @@ function Game() {
           <div style={{display:"flex",gap:10}}>
             <button onClick={shareScore} style={{flex:1,padding:"10px",borderRadius:50,border:"1px solid "+algoInfo.color,background:"transparent",color:algoInfo.color,fontFamily:"Orbitron,sans-serif",fontSize:"0.68rem",cursor:"pointer"}}>SHARE</button>
             <button onClick={()=>router.push("/select")} style={{flex:1,padding:"10px",borderRadius:50,border:"1px solid rgba(255,255,255,0.15)",background:"transparent",color:"#94a3b8",fontFamily:"Orbitron,sans-serif",fontSize:"0.68rem",cursor:"pointer"}}>MODES</button>
-            <button onClick={exitGame} style={{flex:1,padding:"10px",borderRadius:50,border:"1px solid #f87171",background:"transparent",color:"#f87171",fontFamily:"Orbitron,sans-serif",fontSize:"0.68rem",cursor:"pointer"}}>EXIT</button>
+            <button onClick={exitGame} style={{flex:1,padding:"10px",borderRadius:50,border:"1px solid #f87171",background:"transparent",color:"#f87171",fontFamily:"Orbitron,sans-serif",fontSize:"0.68rem",cursor:"pointer"}}>🚪 Logout</button>
           </div>
         </div>
       </motion.div>
@@ -214,7 +208,19 @@ function Game() {
   );
 
   return (
-    <div style={{ minHeight:"100vh", background:"#f5f5f5", color:"#00FFFF", fontFamily:"'Courier New', monospace", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:20, position:"relative", overflow:"hidden" }}>
+    <div style={{ 
+      minHeight:"100vh", 
+      background:"#f5f5f5", 
+      color:"#00FFFF", 
+      fontFamily:"'Courier New', monospace", 
+      display:"flex", 
+      flexDirection:"column", 
+      alignItems:"center", 
+      justifyContent:"center", 
+      padding:"20px 10px", 
+      position:"relative", 
+      overflow:"hidden" 
+    }}>
       {/* Animated background particles */}
       <div style={{ position:"absolute", top:0, left:0, right:0, bottom:0, zIndex:0 }}>
         {[...Array(25)].map((_,i) => (
@@ -233,66 +239,127 @@ function Game() {
       </div>
 
       {/* Header */}
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", width:"100%", maxWidth:"1200px", marginBottom:30, position:"relative", zIndex:1 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:15 }}>
+      <div style={{ 
+        display:"flex", 
+        justifyContent:"space-between", 
+        alignItems:"center", 
+        width:"100%", 
+        maxWidth:"1200px", 
+        marginBottom:20, 
+        position:"relative", 
+        zIndex:1,
+        flexWrap:"wrap",
+        gap:15
+      }}>
+        {/* Main Title */}
+        <div style={{ 
+          textAlign:"center", 
+          width:"100%", 
+          marginBottom:15,
+          order:0
+        }}>
+          <h1 style={{ 
+            fontSize:"clamp(1.5rem, 4vw, 2.5rem)", 
+            fontWeight:"bold", 
+            color:"#0066FF", 
+            fontFamily:"'Courier New', monospace",
+            textShadow:"0 0 20px rgba(0,102,255,0.5)",
+            margin:"0",
+            padding:"10px 0",
+            letterSpacing:"2px"
+          }}>
+            SORTING QUIZ
+          </h1>
+        </div>
+        
+        <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap", order:1 }}>
           <div style={{ 
             background:"#000", 
             border:"2px solid #00FFFF", 
             borderRadius:0, 
             padding:"10px 20px", 
-            fontSize:"1rem", 
+            fontSize:"clamp(0.9rem, 3vw, 1.3rem)", 
             fontWeight:"bold", 
             color:"#00FFFF", 
             fontFamily:"'Courier New', monospace",
-            boxShadow:"0 0 15px rgba(0,255,255,0.5)"
+            boxShadow:"0 0 20px rgba(0,255,255,0.6)"
           }}>
-            <span style={{ marginRight:8 }}>{algoInfo.icon}</span>
-            {algoInfo.name}
+            {algoInfo.icon} {algoInfo.name}
+          </div>
+          <div style={{ 
+            background:"#000", 
+            border:"2px solid #FF00FF", 
+            borderRadius:0, 
+            padding:"8px 15px", 
+            fontSize:"clamp(0.8rem, 2.5vw, 1rem)", 
+            fontWeight:"bold", 
+            color:"#FF00FF", 
+            fontFamily:"'Courier New', monospace",
+            boxShadow:"0 0 15px rgba(255,0,255,0.5)"
+          }}>
+            Level: {Math.floor(totalAnswered / 5) + 1}
           </div>
         </div>
-        <div style={{ display:"flex", alignItems:"center", gap:15 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-            <span style={{ fontSize:"0.9rem", color:"#00FFFF", fontFamily:"'Courier New', monospace" }}>SOUND</span>
-            <button onClick={() => setSoundEnabled(!soundEnabled)} style={{ 
-              background:soundEnabled ? "#00FF00" : "#FF0000", 
-              border:"2px solid "+(soundEnabled ? "#00FF00" : "#FF0000"), 
-              borderRadius:0, 
-              padding:"8px 12px", 
-              fontSize:"0.8rem", 
-              fontWeight:"bold", 
-              color:"#000", 
-              fontFamily:"'Courier New', monospace",
-              cursor:"pointer",
-              boxShadow:"0 0 10px "+(soundEnabled ? "rgba(0,255,0,0.5)" : "rgba(255,0,0,0.5)")
-            }}>
-              {soundEnabled ? "ON" : "OFF"}
-            </button>
-          </div>
-          <div style={{ display:"flex", alignItems:"center", gap:5, background:"#000", border:"2px solid #FF0000", borderRadius:0, padding:"8px 15px", boxShadow:"0 0 15px rgba(255,0,0,0.5)" }}>
-            {[...Array(3)].map((_,i) => (
-              <span key={i} style={{ fontSize:"1.2rem", color:i < lives ? "#FF0000" : "#333", fontFamily:"'Courier New', monospace" }}>♥</span>
-            ))}
-          </div>
+        
+        <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap", order:2 }}>
+          <button onClick={()=>router.push("/select")} style={{ 
+            background:"#FFFF00", 
+            border:"3px solid #FFFF00", 
+            borderRadius:0, 
+            padding:"10px 20px", 
+            fontSize:"clamp(0.8rem, 2.5vw, 1.2rem)", 
+            fontWeight:"bold", 
+            color:"#000", 
+            fontFamily:"'Courier New', monospace",
+            boxShadow:"0 0 20px rgba(255,255,0,0.6)",
+            cursor:"pointer",
+            minWidth:"120px"
+          }}>🚪 FREE PLAY</button>
+          <button onClick={exitGame} style={{ 
+            padding:"8px 15px", 
+            borderRadius:0, 
+            border:"2px solid #FF0000", 
+            background:"#000", 
+            color:"#FF0000", 
+            fontWeight:"bold", 
+            fontSize:"clamp(0.7rem, 2vw, 0.9rem)", 
+            cursor:"pointer", 
+            fontFamily:"'Courier New', monospace",
+            boxShadow:"0 0 15px rgba(255,0,0,0.5)",
+            transition:"all 0.3s ease"
+          }}>🚪 LOGOUT</button>
         </div>
       </div>
 
       {/* Main game area */}
-      <div style={{ display:"flex", alignItems:"flex-start", gap:30, position:"relative", zIndex:1, width:"100%", maxWidth:"1200px", justifyContent:"center" }}>
+      <div style={{ 
+        display:"flex", 
+        alignItems:"flex-start", 
+        gap:20, 
+        position:"relative", 
+        zIndex:1, 
+        width:"100%", 
+        maxWidth:"1200px", 
+        justifyContent:"center",
+        flexDirection:"row",
+        flexWrap:"wrap"
+      }}>
           
           {/* CRT Monitor Container */}
           <div style={{ 
             background:"#0a0a2e", 
             border:"3px solid #00FFFF", 
             borderRadius:10, 
-            padding:"20px", 
+            padding:"15px", 
             width:"100%", 
-            maxWidth:"800px", 
-            minHeight:"600px", 
+            maxWidth:"700px", 
+            minHeight:"500px", 
             display:"flex", 
             flexDirection:"column", 
             justifyContent:"center",
             boxShadow:"0 0 30px rgba(0,255,255,0.5), inset 0 0 20px rgba(0,255,255,0.1)",
-            position:"relative"
+            position:"relative",
+            order:1
           }}>
             {/* Scanline Effect */}
             <div style={{ 
@@ -306,23 +373,24 @@ function Game() {
               zIndex:1 
             }} />
             {/* Question at top */}
-            <div style={{ textAlign:"center", marginBottom:25, position:"relative", zIndex:2 }}>
+            <div style={{ textAlign:"center", marginBottom:20, position:"relative", zIndex:2 }}>
               <motion.div key={currentQuestion.id} initial={{ opacity:0, y:-16 }} animate={{ opacity:1, y:0 }}>
                 <div style={{ 
                   display:"inline-block", 
                   background:"#000", 
                   border:"2px solid #00FFFF", 
                   borderRadius:0, 
-                  padding:"15px 25px", 
-                  maxWidth:400, 
-                  fontSize:"1rem", 
+                  padding:"12px 20px", 
+                  maxWidth:"90%", 
+                  fontSize:"clamp(0.8rem, 2.5vw, 1rem)", 
                   fontWeight:"bold", 
                   color:"#00FFFF", 
                   fontFamily:"'Courier New', monospace",
                   boxShadow:"0 0 15px rgba(0,255,255,0.5)",
-                  textShadow:"0 0 5px #00FFFF"
+                  textShadow:"0 0 5px #00FFFF",
+                  wordBreak:"break-word"
                 }}>
-                  <span style={{ marginRight:10 }}>{algoInfo.icon}</span>
+                  <span style={{ marginRight:8 }}>{algoInfo.icon}</span>
                   {questionLoading ? "LOADING..." : currentQuestion.question.toUpperCase()}
                 </div>
                 {!isLocked && (
@@ -341,7 +409,7 @@ function Game() {
                   }}>
                     {actionMsg
                       ? <span style={{ color:"#00FF00", fontWeight:"bold" }}>► {actionMsg.toUpperCase()}</span>
-                      : <span>{algoAction.hint}</span>}
+                      : <span>Sort the items in correct order</span>}
                     {selectedIndex !== null && (
                       <button onClick={() => { setSelectedIndex(null); setActionMsg(""); }} style={{ background:"none", border:"1px solid #FF0000", color:"#FF0000", cursor:"pointer", fontSize:"1rem", padding:"5px", fontFamily:"'Courier New', monospace" }}>✕</button>
                     )}
@@ -481,60 +549,90 @@ function Game() {
               )}
 
               {/* Submit buttons */}
-              <div style={{ display:"flex", justifyContent:"center", alignItems:"center", gap:15, flexWrap:"wrap" }}>
+              <div style={{ 
+                display:"flex", 
+                justifyContent:"center", 
+                alignItems:"center", 
+                gap:10, 
+                flexWrap:"nowrap",
+                overflowX:"auto",
+                padding:"0 10px"
+              }}>
                 <button disabled={currentIndex === 0 || isLocked}
                   onClick={() => { if (currentIndex > 0 && !isLocked) setCurrentIndex((p: number) => p - 1); }}
                   style={{ 
-                    padding:"12px 25px", 
+                    padding:"clamp(8px, 2vw, 12px) clamp(15px, 4vw, 25px)", 
                     borderRadius:0, 
-                    border:"2px solid #00FF00", 
+                    border:"2px solid rgb(30, 231, 30)", 
                     background:currentIndex === 0 || isLocked ? "#333" : "#000", 
                     color:currentIndex === 0 || isLocked ? "#666" : "#00FF00", 
                     fontWeight:"bold", 
-                    fontSize:"0.9rem", 
+                    fontSize:"clamp(0.7rem, 2.5vw, 0.9rem)", 
                     cursor: currentIndex === 0 || isLocked ? "default" : "pointer", 
+                    transition:"all 0.2s", 
                     fontFamily:"'Courier New', monospace",
-                    boxShadow:currentIndex === 0 || isLocked ? "none" : "0 0 15px rgba(0,255,0,0.8)"
+                    boxShadow:currentIndex === 0 || isLocked ? "none" : "0 0 15px rgba(0,255,0,0.8)",
+                    flex:"0 0 auto",
+                    minWidth:"80px"
                   }}>◄ PREV</button>
                 <button ref={submitBtnRef} disabled={isLocked} onClick={submit}
                   style={{ 
-                    padding:"15px 50px", 
+                    padding:"clamp(10px, 2.5vw, 15px) clamp(25px, 6vw, 50px)", 
                     borderRadius:0, 
                     border:"2px solid #FFFF00", 
                     background:isLocked ? "#333" : "#FFFF00", 
                     color:isLocked ? "#666" : "#000", 
                     fontWeight:"bold", 
-                    fontSize:"1rem", 
+                    fontSize:"clamp(0.8rem, 3vw, 1rem)", 
                     cursor:isLocked ? "default" : "pointer", 
                     fontFamily:"'Courier New', monospace",
                     boxShadow:isLocked ? "none" : "0 0 20px rgba(255,255,0,0.8)",
-                    textShadow:isLocked ? "none" : "0 0 10px rgba(255,255,0,0.5)"
+                    textShadow:isLocked ? "none" : "0 0 10px rgba(255,255,0,0.5)",
+                    flex:"0 0 auto",
+                    minWidth:"100px"
                   }}>
                   {isLocked ? (feedback === "correct" ? "✓ CORRECT" : "✗ WRONG") : "SUBMIT"}
                 </button>
-                <button disabled={isLocked}
-                  onClick={() => { if (!isLocked) { const next=randomCategory(); setCurrentCategory(next); setCurrentIndex((p: number) => p + 1); setTimeout(fetchQuestion,0); } }}
+                <button 
+                  onClick={() => { 
+                    setFeedback(null); // Clear feedback to unlock next question
+                    const nextCategory = randomCategory(); // Get random category
+                    setCurrentCategory(nextCategory); // Set new category
+                    setCurrentIndex((p: number) => p + 1); 
+                  }}
                   style={{ 
-                    padding:"12px 25px", 
+                    padding:"clamp(8px, 2vw, 12px) clamp(15px, 4vw, 25px)", 
                     borderRadius:0, 
                     border:"2px solid #FF00FF", 
-                    background:isLocked ? "#333" : "#000", 
-                    color:isLocked ? "#666" : "#FF00FF", 
+                    background:"#000", 
+                    color:"#FF00FF", 
                     fontWeight:"bold", 
-                    fontSize:"0.9rem", 
-                    cursor:isLocked ? "default" : "pointer", 
+                    fontSize:"clamp(0.7rem, 2.5vw, 0.9rem)", 
+                    cursor:"pointer", 
+                    transition:"all 0.2s", 
                     fontFamily:"'Courier New', monospace",
-                    boxShadow:isLocked ? "none" : "0 0 15px rgba(255,0,255,0.8)"
+                    boxShadow:"0 0 15px rgba(255,0,255,0.8)",
+                    flex:"0 0 auto",
+                    minWidth:"80px"
                   }}>NEXT ►</button>
               </div>
             </div>
           </div>
           
-          {/* Cyber Timer on right side */}
-          <div style={{ display:"flex", flexDirection:"column", gap:15, minWidth:"fit-content", marginLeft:"20px", paddingTop:"40px" }}>
+          {/* Cyber Timer and Score on right side */}
+          <div style={{ 
+            display:"flex", 
+            flexDirection:"column", 
+            gap:15, 
+            minWidth:"fit-content", 
+            marginLeft:"0px", 
+            paddingTop:"20px",
+            order:2,
+            flex:"0 0 auto"
+          }}>
             <div style={{ 
-              width:60, 
-              height:60, 
+              width: "clamp(50px, 8vw, 60px)", 
+              height: "clamp(50px, 8vw, 60px)", 
               background:"#000", 
               border:"2px solid #00FFFF", 
               borderRadius:0, 
@@ -542,7 +640,8 @@ function Game() {
               alignItems:"center", 
               justifyContent:"center", 
               position:"relative", 
-              boxShadow:"0 0 20px rgba(0,255,255,0.5)"
+              boxShadow:"0 0 20px rgba(0,255,255,0.5)",
+              margin:"0 auto"
             }}>
               <div style={{ 
                 position:"absolute", 
@@ -556,7 +655,7 @@ function Game() {
               <div style={{ 
                 position:"relative", 
                 zIndex:1, 
-                fontSize:"1.2rem", 
+                fontSize: "clamp(1rem, 3vw, 1.2rem)", 
                 fontWeight:"bold", 
                 color:timerColor,
                 fontFamily:"'Courier New', monospace",
@@ -564,38 +663,54 @@ function Game() {
               }}>{timeLeft}</div>
             </div>
             <div style={{ 
-              fontSize:"0.8rem", 
+              fontSize: "clamp(0.7rem, 2vw, 0.8rem)", 
               color:"#00FFFF", 
               fontFamily:"'Courier New', monospace", 
               textAlign:"center",
               fontWeight:"bold"
             }}>TIMER</div>
-            <div style={{ display:"flex", gap:10, alignItems:"center", justifyContent:"space-between" }}>
-              <button onClick={()=>router.push("/select")} style={{ 
-                background:"#000", 
-                border:"2px solid #FF00FF", 
-                borderRadius:0, 
-                padding:"10px 20px", 
-                fontSize:"0.9rem", 
-                fontWeight:"bold", 
-                color:"#FF00FF", 
-                fontFamily:"'Courier New', monospace",
-                boxShadow:"0 0 15px rgba(255,0,255,0.5)",
-                cursor:"pointer"
-              }}>MODES</button>
+            <div style={{ 
+              background:"#000", 
+              border:"2px solid #FF00FF", 
+              borderRadius:0, 
+              padding:"10px 20px", 
+              fontSize: "clamp(0.9rem, 2.5vw, 1.1rem)", 
+              fontWeight:"bold", 
+              color:"#FF00FF", 
+              fontFamily:"'Courier New', monospace",
+              boxShadow:"0 0 20px rgba(255,0,255,0.6)",
+              textAlign:"center",
+              minWidth: "clamp(150px, 25vw, 200px)"
+            }}>
+              SCORE: {score}
+            </div>
+            
+            {/* ── GAME STATUS ── */}
+            <div style={{ 
+              textAlign:"center", 
+              padding:"8px 12px", 
+              margin:"10px 0",
+              background:"rgba(0,0,0,0.8)", 
+              border:"2px solid #00FFFF", 
+              borderRadius:0,
+              boxShadow:"0 0 15px rgba(0,255,255,0.3)",
+              minWidth: "clamp(150px, 25vw, 200px)"
+            }}>
               <div style={{ 
-                background:"#000", 
-                border:"2px solid #FF00FF", 
-                borderRadius:0, 
-                padding:"10px 20px", 
-                fontSize:"0.9rem", 
+                fontSize: "clamp(0.7rem, 2vw, 0.8rem)", 
                 fontWeight:"bold", 
-                color:"#FF00FF", 
+                color:"#00FFFF", 
                 fontFamily:"'Courier New', monospace",
-                boxShadow:"0 0 15px rgba(255,0,255,0.5)",
-                textAlign:"center"
+                marginBottom:"3px"
               }}>
-                SCORE: {score}
+                STATUS: {gameOver ? "🏁 GAME OVER" : loading ? "⏳ LOADING" : questionLoading ? "🔄 PROCESSING" : "🎮 PLAYING"}
+              </div>
+              <div style={{ 
+                fontSize: "clamp(0.6rem, 1.8vw, 0.7rem)", 
+                color:"#FF00FF", 
+                fontFamily:"'Courier New', monospace"
+              }}>
+                Q{currentIndex + 1} • Answered: {totalAnswered} • Lives: {lives}
               </div>
             </div>
           </div>
@@ -605,7 +720,21 @@ function Game() {
       <AnimatePresence>
         {feedback && (
           <motion.div initial={{ opacity:0, y:30 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-20 }}
-            style={{ position:"relative", zIndex:1, margin:"0 20px 20px", padding:"16px 24px", borderRadius:0, textAlign:"center", fontWeight:800, fontSize:"1.05rem", color:"white", background: feedback === "correct" ? "rgba(0,255,0,0.12)" : "rgba(255,0,0,0.12)", border:"2px solid #00FFFF", boxShadow: feedback === "correct" ? "0 0 30px rgba(0,255,0,0.2)" : "0 0 30px rgba(255,0,0,0.2)" }}>
+            style={{ 
+              position:"relative", 
+              zIndex:1, 
+              margin:"0 10px 15px", 
+              padding:"12px 20px", 
+              borderRadius:0, 
+              textAlign:"center", 
+              fontWeight:800, 
+              fontSize:"clamp(0.9rem, 3vw, 1.05rem)", 
+              color: feedback === "correct" ? "white" : "#FF0000", 
+              background: feedback === "correct" ? "rgba(0,255,0,0.3)" : "rgba(0,0,0,0.9)", 
+              border: feedback === "correct" ? "2px solid #00FF00" : "2px solid #FF0000", 
+              boxShadow: feedback === "correct" ? "0 0 30px rgba(0,255,0,0.4)" : "0 0 30px rgba(255,0,0,0.6)",
+              maxWidth:"90%"
+            }}>
             {feedback === "correct" ? "🎉 CORRECT! +10 POINTS" : "❌ WRONG — CORRECT ORDER SHOWN ABOVE ↑"}
           </motion.div>
         )}
