@@ -15,14 +15,118 @@ async function apiCall(url: string, options: RequestInit = {}) {
   return res;
 }
 
-function playTone(type) {
+// Enhanced sound system with multiple effects
+function playTone(type, volume = 0.3) {
   try {
-    const ctx = new AudioContext(); const osc = ctx.createOscillator(); const gain = ctx.createGain();
-    osc.connect(gain); gain.connect(ctx.destination);
-    if (type === "correct") { osc.frequency.setValueAtTime(523, ctx.currentTime); osc.frequency.setValueAtTime(659, ctx.currentTime+0.1); osc.frequency.setValueAtTime(784, ctx.currentTime+0.2); gain.gain.setValueAtTime(0.3, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+0.5); osc.start(); osc.stop(ctx.currentTime+0.5); }
-    else if (type === "wrong") { osc.type="sawtooth"; osc.frequency.setValueAtTime(200, ctx.currentTime); osc.frequency.setValueAtTime(150, ctx.currentTime+0.15); gain.gain.setValueAtTime(0.3, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+0.3); osc.start(); osc.stop(ctx.currentTime+0.3); }
-    else { osc.type="triangle"; osc.frequency.setValueAtTime(300, ctx.currentTime); osc.frequency.setValueAtTime(100, ctx.currentTime+0.4); gain.gain.setValueAtTime(0.4, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+0.7); osc.start(); osc.stop(ctx.currentTime+0.7); }
-  } catch {}
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    switch(type) {
+      case "correct":
+        // Success chime - ascending notes
+        osc.frequency.setValueAtTime(523, ctx.currentTime); // C5
+        osc.frequency.setValueAtTime(659, ctx.currentTime + 0.1); // E5
+        osc.frequency.setValueAtTime(784, ctx.currentTime + 0.2); // G5
+        gain.gain.setValueAtTime(volume, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.6);
+        break;
+        
+      case "wrong":
+        // Error buzz - descending sawtooth
+        osc.type = "sawtooth";
+        osc.frequency.setValueAtTime(300, ctx.currentTime);
+        osc.frequency.setValueAtTime(200, ctx.currentTime + 0.1);
+        osc.frequency.setValueAtTime(150, ctx.currentTime + 0.2);
+        gain.gain.setValueAtTime(volume, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.4);
+        break;
+        
+      case "click":
+        // Click sound - short sine wave
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(800, ctx.currentTime);
+        gain.gain.setValueAtTime(volume * 0.5, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.05);
+        break;
+        
+      case "drop":
+        // Drop sound - thud effect
+        osc.type = "square";
+        osc.frequency.setValueAtTime(150, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(50, ctx.currentTime + 0.1);
+        gain.gain.setValueAtTime(volume * 0.4, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.2);
+        break;
+        
+      case "timer":
+        // Timer tick - short beep
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(1000, ctx.currentTime);
+        gain.gain.setValueAtTime(volume * 0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.1);
+        break;
+        
+      case "levelup":
+        // Level up fanfare - triumphant
+        osc.frequency.setValueAtTime(523, ctx.currentTime); // C5
+        osc.frequency.setValueAtTime(659, ctx.currentTime + 0.15); // E5
+        osc.frequency.setValueAtTime(784, ctx.currentTime + 0.3); // G5
+        osc.frequency.setValueAtTime(1047, ctx.currentTime + 0.45); // C6
+        gain.gain.setValueAtTime(volume, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.8);
+        break;
+        
+      case "shuffle":
+        // Shuffle sound - whoosh effect
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(400, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.2);
+        gain.gain.setValueAtTime(volume * 0.6, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.3);
+        break;
+        
+      case "gameover":
+        // Game over sound - dramatic descending tones
+        osc.frequency.setValueAtTime(523, ctx.currentTime); // C5
+        osc.frequency.setValueAtTime(392, ctx.currentTime + 0.2); // G4
+        osc.frequency.setValueAtTime(262, ctx.currentTime + 0.4); // C4
+        osc.frequency.setValueAtTime(131, ctx.currentTime + 0.6); // C3
+        gain.gain.setValueAtTime(volume, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.0);
+        osc.start();
+        osc.stop(ctx.currentTime + 1.0);
+        break;
+        
+      default:
+        // Default neutral tone
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(300, ctx.currentTime);
+        osc.frequency.setValueAtTime(100, ctx.currentTime + 0.4);
+        gain.gain.setValueAtTime(volume, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.7);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.7);
+    }
+  } catch (error) {
+    console.log("Audio error:", error);
+  }
 }
 
 const ALGO_LABELS = {
@@ -133,6 +237,8 @@ function Game() {
         setTotalAnswered(p=>p+1); // Only increment for correct answers
         setScore(s=>{const ns=s+10;if(ns>Number(sessionStorage.getItem("highScore")||"0")){sessionStorage.setItem("highScore",String(ns));setHighScore(ns);}return ns;});
         setStreak(p=>{const n=p+1;sessionStorage.setItem("streak",String(n));return n;});
+        // Play level up sound every 5 correct answers
+        if((totalAnswered + 1) % 5 === 0){playTone("levelup");}
         confetti({particleCount:180,spread:100,origin:{y:0.6}});
         if(soundEnabled)playTone("correct");
         if(submitBtnRef.current){const r=submitBtnRef.current.getBoundingClientRect();setFloatScore({x:r.left+r.width/2-20,y:r.top-20});}
@@ -149,12 +255,15 @@ function Game() {
   useEffect(()=>{
     if(feedback||gameOver)return;
     if(timeLeft<=0){submitRef.current?.();return;}
+    // Add timer tick sound for last 5 seconds
+    if(timeLeft<=5 && timeLeft>0){playTone("timer");}
     const t=setTimeout(()=>setTimeLeft(p=>p-1),1000);
     return()=>clearTimeout(t);
   },[timeLeft,feedback,gameOver]);
 
   const handleItemClick=(index)=>{
     if(feedback)return;
+    playTone("click"); // Add click sound to item selection
     const freeModes=["numbers_asc","numbers_desc","letters_asc","letters_desc","days"];
     if(freeModes.includes(mode)){
       if(selectedIndex===null){setSelectedIndex(index);setActionMsg(items[index]+" selected");}
@@ -183,7 +292,7 @@ function Game() {
   const R=28,circ=2*Math.PI*R;
 
   if(loading)return(<div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#0f172a"}}><div style={{width:44,height:44,border:"3px solid rgba(96,165,250,0.2)",borderTopColor:"#60a5fa",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/></div>);
-  if(error||!currentQuestion)return(<div style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"#0f172a",color:"white",gap:16}}><p style={{fontSize:"1.2rem",color:"#f87171"}}>{error||"No questions found"}</p><button onClick={()=>router.push("/select")} style={{padding:"10px 28px",borderRadius:50,border:"1px solid #60a5fa",background:"transparent",color:"#60a5fa",cursor:"pointer"}}>Back</button></div>);
+  if(error||!currentQuestion)return(<div style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"#0f172a",color:"white",gap:16}}><p style={{fontSize:"1.2rem",color:"#f87171"}}>{error||"No questions found"}</p><button onClick={()=>{playTone("click");router.push("/select");}} style={{padding:"10px 28px",borderRadius:50,border:"1px solid #60a5fa",background:"transparent",color:"#60a5fa",cursor:"pointer"}}>Back</button></div>);
 
   if(gameOver)return(
     <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"#0f172a",padding:24}}>
@@ -196,11 +305,11 @@ function Game() {
           <div><div style={{fontSize:"0.6rem",color:"#64748b",letterSpacing:"0.2em",marginBottom:4}}>ROUNDS</div><div style={{fontSize:"2rem",fontWeight:900,color:"#60a5fa",fontFamily:"Orbitron,sans-serif"}}>{totalAnswered}</div></div>
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:10}}>
-          <button onClick={()=>window.location.reload()} style={{padding:"13px",borderRadius:50,border:"none",background:"linear-gradient(135deg,"+algoInfo.color+",#60a5fa)",color:"white",fontFamily:"Orbitron,sans-serif",fontWeight:700,fontSize:"0.8rem",cursor:"pointer"}}>PLAY AGAIN</button>
+          <button onClick={()=>{playTone("click");window.location.reload();}} style={{padding:"13px",borderRadius:50,border:"none",background:"linear-gradient(135deg,"+algoInfo.color+",#60a5fa)",color:"white",fontFamily:"Orbitron,sans-serif",fontWeight:700,fontSize:"0.8rem",cursor:"pointer"}}>PLAY AGAIN</button>
           <div style={{display:"flex",gap:10}}>
-            <button onClick={shareScore} style={{flex:1,padding:"10px",borderRadius:50,border:"1px solid "+algoInfo.color,background:"transparent",color:algoInfo.color,fontFamily:"Orbitron,sans-serif",fontSize:"0.68rem",cursor:"pointer"}}>SHARE</button>
-            <button onClick={()=>router.push("/select")} style={{flex:1,padding:"10px",borderRadius:50,border:"1px solid rgba(255,255,255,0.15)",background:"transparent",color:"#94a3b8",fontFamily:"Orbitron,sans-serif",fontSize:"0.68rem",cursor:"pointer"}}>MODES</button>
-            <button onClick={exitGame} style={{flex:1,padding:"10px",borderRadius:50,border:"1px solid #f87171",background:"transparent",color:"#f87171",fontFamily:"Orbitron,sans-serif",fontSize:"0.68rem",cursor:"pointer"}}>🚪 Logout</button>
+            <button onClick={()=>{playTone("click");shareScore();}} style={{flex:1,padding:"10px",borderRadius:50,border:"1px solid "+algoInfo.color,background:"transparent",color:algoInfo.color,fontFamily:"Orbitron,sans-serif",fontSize:"0.68rem",cursor:"pointer"}}>SHARE</button>
+            <button onClick={()=>{playTone("click");router.push("/select");}} style={{flex:1,padding:"10px",borderRadius:50,border:"1px solid rgba(255,255,255,0.15)",background:"transparent",color:"#94a3b8",fontFamily:"Orbitron,sans-serif",fontSize:"0.68rem",cursor:"pointer"}}>MODES</button>
+            <button onClick={()=>{playTone("click");exitGame();}} style={{flex:1,padding:"10px",borderRadius:50,border:"1px solid #f87171",background:"transparent",color:"#f87171",fontFamily:"Orbitron,sans-serif",fontSize:"0.68rem",cursor:"pointer"}}>🚪 Logout</button>
           </div>
         </div>
       </motion.div>
@@ -302,29 +411,42 @@ function Game() {
         </div>
         
         <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap", order:2 }}>
-          <button onClick={()=>router.push("/select")} style={{ 
+          <button onClick={()=>{playTone("click");router.push("/select");}} style={{ 
             background:"#FFFF00", 
             border:"3px solid #FFFF00", 
             borderRadius:0, 
-            padding:"10px 20px", 
-            fontSize:"clamp(0.8rem, 2.5vw, 1.2rem)", 
-            fontWeight:"bold", 
-            color:"#000", 
-            fontFamily:"'Courier New', monospace",
-            boxShadow:"0 0 20px rgba(255,255,0,0.6)",
+            padding:"12px 20px", 
+            fontFamily:"Orbitron,sans-serif",
+            fontWeight:700,
+            fontSize:"0.9rem",
+            color:"#000",
             cursor:"pointer",
+            boxShadow:"0 0 20px rgba(255,255,0,0.6)",
             minWidth:"120px"
           }}>🚪 FREE PLAY</button>
-          <button onClick={exitGame} style={{ 
+          <button onClick={()=>{playTone("click");setSoundEnabled(!soundEnabled);}} style={{ 
+            padding:"8px 15px", 
+            borderRadius:0, 
+            border:"2px solid " + (soundEnabled ? "#00FF00" : "#FF0000"), 
+            background:"transparent",
+            color: soundEnabled ? "#00FF00" : "#FF0000",
+            fontFamily:"'Courier New', monospace",
+            fontWeight:900,
+            fontSize:"0.7rem",
+            cursor:"pointer",
+            boxShadow:"0 0 15px " + (soundEnabled ? "rgba(0,255,0,0.5)" : "rgba(255,0,0,0.5)"),
+            transition:"all 0.3s ease"
+          }}>{soundEnabled ? "🔊 ON" : "🔇 OFF"}</button>
+          <button onClick={()=>{playTone("click");exitGame();}} style={{ 
             padding:"8px 15px", 
             borderRadius:0, 
             border:"2px solid #FF0000", 
-            background:"#000", 
-            color:"#FF0000", 
-            fontWeight:"bold", 
-            fontSize:"clamp(0.7rem, 2vw, 0.9rem)", 
-            cursor:"pointer", 
+            background:"transparent",
+            color:"#FF0000",
             fontFamily:"'Courier New', monospace",
+            fontWeight:900,
+            fontSize:"0.7rem",
+            cursor:"pointer",
             boxShadow:"0 0 15px rgba(255,0,0,0.5)",
             transition:"all 0.3s ease"
           }}>🚪 LOGOUT</button>
@@ -411,7 +533,7 @@ function Game() {
                       ? <span style={{ color:"#00FF00", fontWeight:"bold" }}>► {actionMsg.toUpperCase()}</span>
                       : <span>Sort the items in correct order</span>}
                     {selectedIndex !== null && (
-                      <button onClick={() => { setSelectedIndex(null); setActionMsg(""); }} style={{ background:"none", border:"1px solid #FF0000", color:"#FF0000", cursor:"pointer", fontSize:"1rem", padding:"5px", fontFamily:"'Courier New', monospace" }}>✕</button>
+                      <button onClick={() => { playTone("click"); setSelectedIndex(null); setActionMsg(""); }} style={{ background:"none", border:"1px solid #FF0000", color:"#FF0000", cursor:"pointer", fontSize:"1rem", padding:"5px", fontFamily:"'Courier New', monospace" }}>✕</button>
                     )}
                   </div>
                 )}
@@ -499,7 +621,7 @@ function Game() {
                   {mode === "bubble_sort" ? (
                     <>
                       <button disabled={selectedIndex === null}
-                        onClick={() => { if (selectedIndex === null) return; const next = [...items]; const sw = selectedIndex < items.length - 1 ? selectedIndex + 1 : selectedIndex - 1; [next[selectedIndex], next[sw]] = [next[sw], next[selectedIndex]]; setItems(next); setActionMsg("SWAPPED!"); setSelectedIndex(null); }}
+                        onClick={() => { if (selectedIndex === null) return; const next = [...items]; const sw = selectedIndex < items.length - 1 ? selectedIndex + 1 : selectedIndex - 1; [next[selectedIndex], next[sw]] = [next[sw], next[selectedIndex]]; setItems(next); setActionMsg("SWAPPED!"); setSelectedIndex(null); playTone("drop");}}
                         style={{ 
                           padding:"10px 20px", 
                           borderRadius:0, 
@@ -514,7 +636,7 @@ function Game() {
                           boxShadow:selectedIndex !== null ? "0 0 15px rgba(0,255,255,0.8)" : "0 0 10px rgba(0,255,255,0.3)"
                         }}>🔄 SWAP</button>
                       <button disabled={selectedIndex === null}
-                        onClick={() => { if (selectedIndex === null) return; setActionMsg("PASSED!"); setSelectedIndex(null); }}
+                        onClick={() => { if (selectedIndex === null) return; setActionMsg("PASSED!"); setSelectedIndex(null); playTone("shuffle");}}
                         style={{ 
                           padding:"10px 20px", 
                           borderRadius:0, 
@@ -559,7 +681,7 @@ function Game() {
                 padding:"0 10px"
               }}>
                 <button disabled={currentIndex === 0 || isLocked}
-                  onClick={() => { if (currentIndex > 0 && !isLocked) setCurrentIndex((p: number) => p - 1); }}
+                  onClick={() => { if (currentIndex > 0 && !isLocked) { playTone("click"); setCurrentIndex((p: number) => p - 1); } }}
                   style={{ 
                     padding:"clamp(8px, 2vw, 12px) clamp(15px, 4vw, 25px)", 
                     borderRadius:0, 
@@ -575,7 +697,7 @@ function Game() {
                     flex:"0 0 auto",
                     minWidth:"80px"
                   }}>◄ PREV</button>
-                <button ref={submitBtnRef} disabled={isLocked} onClick={submit}
+                <button ref={submitBtnRef} disabled={isLocked} onClick={()=>{playTone("click");submit();}}
                   style={{ 
                     padding:"clamp(10px, 2.5vw, 15px) clamp(25px, 6vw, 50px)", 
                     borderRadius:0, 

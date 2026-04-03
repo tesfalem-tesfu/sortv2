@@ -5,6 +5,57 @@ import { useRouter } from "next/navigation";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5001";
 
+// Add sound effects to CAPTCHA page
+function playTone(type, volume = 0.3) {
+  try {
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    switch(type) {
+      case "correct":
+        osc.frequency.setValueAtTime(523, ctx.currentTime);
+        osc.frequency.setValueAtTime(659, ctx.currentTime + 0.1);
+        osc.frequency.setValueAtTime(784, ctx.currentTime + 0.2);
+        gain.gain.setValueAtTime(volume, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.6);
+        break;
+      case "wrong":
+        osc.type = "sawtooth";
+        osc.frequency.setValueAtTime(300, ctx.currentTime);
+        osc.frequency.setValueAtTime(200, ctx.currentTime + 0.1);
+        osc.frequency.setValueAtTime(150, ctx.currentTime + 0.2);
+        gain.gain.setValueAtTime(volume, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.4);
+        break;
+      case "click":
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(800, ctx.currentTime);
+        gain.gain.setValueAtTime(volume * 0.5, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.05);
+        break;
+      default:
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(300, ctx.currentTime);
+        osc.frequency.setValueAtTime(100, ctx.currentTime + 0.4);
+        gain.gain.setValueAtTime(volume, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.7);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.7);
+    }
+  } catch (error) {
+    console.log("Audio error:", error);
+  }
+}
+
 export default function Home() {
   const router = useRouter();
 
@@ -15,7 +66,17 @@ export default function Home() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
+  const [soundEnabled, setSoundEnabled] = useState(true);
   const [dots, setDots] = useState("");
+
+  useEffect(() => {
+    const saved = localStorage.getItem("soundEnabled");
+    if(saved !== null) setSoundEnabled(saved === "true");
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("soundEnabled", String(soundEnabled));
+  }, [soundEnabled]);
 
   const fetchCaptcha = useCallback(async () => {
     setImageLoading(true);
@@ -60,9 +121,11 @@ export default function Home() {
       const data = await res.json();
       if (data.success) {
         sessionStorage.setItem("session_token", data.session_token);
+        if(soundEnabled)playTone("correct"); // Success sound
         router.push("/game?mode=numbers_asc");
       } else {
         setError(data.msg || "Incorrect. Try again.");
+        if(soundEnabled)playTone("wrong"); // Error sound
         fetchCaptcha();
       }
     } catch {
@@ -104,10 +167,11 @@ export default function Home() {
               )}
             </div>
 
-            <button className="c-refresh" type="button" onClick={fetchCaptcha}>
+            <button className="c-refresh" type="button" onClick={()=>{if(soundEnabled)playTone("click");fetchCaptcha();}}>
               ↺ new code
             </button>
 
+            
             <form onSubmit={handleSubmit} style={{ width: "100%" }}>
               <input
                 className="c-input"
