@@ -88,8 +88,8 @@ def get_font(size: int):
 
 def _generate_captcha_image(text: str) -> str:
     """Generate a fast captcha image and return as base64 PNG."""
-    width, height = 300, 100  # Smaller image for faster processing
-    img = Image.new("RGB", (width, height), color=(255, 255, 255))
+    width, height = 320, 110  # Slightly larger for better visibility
+    img = Image.new("RGB", (width, height), color=(245, 245, 245))  # Light gray background
     draw = ImageDraw.Draw(img)
 
     # Simple background noise (reduced from 8 lines + 120 dots to 4 lines + 40 dots)
@@ -112,15 +112,18 @@ def _generate_captcha_image(text: str) -> str:
         ))
 
     # Draw characters directly (no individual image processing)
-    font = get_font(48)  # Fixed font size, much smaller
+    font = get_font(56)  # Increased font size for better visibility
     x_offset = 30
     
     for char in text:
-        # Simple color selection
+        # High contrast colors for better visibility
         color = random.choice([
             (0, 0, 0),        # black
-            (20, 30, 160),    # blue
-            (160, 30, 20),    # red
+            (0, 0, 139),      # dark blue
+            (139, 0, 0),      # dark red
+            (0, 100, 0),      # dark green
+            (75, 0, 130),     # indigo
+            (128, 0, 128),    # purple
         ])
         
         # Random position and simple rotation effect via text position
