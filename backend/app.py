@@ -1,11 +1,13 @@
 from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS
+
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from dotenv import load_dotenv
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 from io import BytesIO
 import os, random, string, re, logging, bleach, base64, uuid
+from flasgger import Swagger
 
 load_dotenv()
 
@@ -33,6 +35,9 @@ limiter = Limiter(
     storage_uri="memory://",
 )
 
+# Initialize Swagger for API documentation
+swagger = Swagger(app)
+
 # ── In-memory captcha store {token: answer} ───────────────────────────────────
 captcha_store: dict[str, str] = {}
 
@@ -58,91 +63,101 @@ def security_headers(response):
 # CAPTCHA
 # ────────────────────────────────────────────────
 
+# Cache font globally to avoid repeated loading
+_GLOBAL_FONT = None
+
 def get_font(size: int):
-    font_names = [
-        "arial.ttf", "calibri.ttf", "tahoma.ttf", 
-        "C:\\Windows\\Fonts\\arial.ttf", "C:\\Windows\\Fonts\\calibri.ttf", "C:\\Windows\\Fonts\\tahoma.ttf",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
-        "/System/Library/Fonts/Supplemental/Arial.ttf"
-    ]
-    for name in font_names:
-        try:
-            return ImageFont.truetype(name, size)
-        except Exception:
-            continue
-    return ImageFont.load_default()
+    global _GLOBAL_FONT
+    if _GLOBAL_FONT is None:
+        font_names = [
+            "arial.ttf", "calibri.ttf", "tahoma.ttf", 
+            "C:\\Windows\\Fonts\\arial.ttf", "C:\\Windows\\Fonts\\calibri.ttf", "C:\\Windows\\Fonts\\tahoma.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+            "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+            "/System/Library/Fonts/Supplemental/Arial.ttf"
+        ]
+        for name in font_names:
+            try:
+                _GLOBAL_FONT = ImageFont.truetype(name, size)
+                break
+            except Exception:
+                continue
+        else:
+            _GLOBAL_FONT = ImageFont.load_default()
+    return _GLOBAL_FONT
 
 def _generate_captcha_image(text: str) -> str:
-    """Generate a distorted image captcha and return as base64 PNG."""
-    width, height = 400, 130
-    # White background as requested
+    """Generate a fast captcha image and return as base64 PNG."""
+    width, height = 300, 100  # Smaller image for faster processing
     img = Image.new("RGB", (width, height), color=(255, 255, 255))
     draw = ImageDraw.Draw(img)
 
-    # Background noise lines (subtle)
-    for _ in range(8):
+    # Simple background noise (reduced from 8 lines + 120 dots to 4 lines + 40 dots)
+    for _ in range(4):
         x1, y1 = random.randint(0, width), random.randint(0, height)
         x2, y2 = random.randint(0, width), random.randint(0, height)
         draw.line([(x1, y1), (x2, y2)], fill=(
-            random.randint(150, 220),
-            random.randint(150, 220),
-            random.randint(150, 220),
-        ), width=2)
+            random.randint(180, 220),
+            random.randint(180, 220),
+            random.randint(180, 220),
+        ), width=1)
 
-    # Background dots
-    for _ in range(120):
+    # Reduced background dots
+    for _ in range(40):
         x, y = random.randint(0, width), random.randint(0, height)
-        draw.ellipse([x, y, x+3, y+3], fill=(
-            random.randint(120, 200),
-            random.randint(120, 200),
-            random.randint(120, 200),
+        draw.ellipse([x, y, x+2, y+2], fill=(
+            random.randint(150, 200),
+            random.randint(150, 200),
+            random.randint(150, 200),
         ))
 
-    # Draw each character with random offset and colorful text
-    x_offset = 20
+    # Draw characters directly (no individual image processing)
+    font = get_font(48)  # Fixed font size, much smaller
+    x_offset = 30
+    
     for char in text:
-        # Use darker colorful text for contrast against white background
+        # Simple color selection
         color = random.choice([
-            (20, 30, 160),    # deep blue
-            (110, 20, 160),   # dark purple
-            (160, 30, 20),    # dark red
-            (20, 120, 60),    # dark green
             (0, 0, 0),        # black
+            (20, 30, 160),    # blue
+            (160, 30, 20),    # red
         ])
         
-        # Huge font size for ultimate visibility
-        font_size = random.randint(85, 110)
-        font = get_font(font_size)
+        # Random position and simple rotation effect via text position
+        y_offset = 65 + random.randint(-8, 8)
+        x_pos = x_offset + random.randint(-3, 3)
         
-        # Render character onto a transparent layer for distortion/rotation
-        char_img = Image.new("RGBA", (140, 140), (0, 0, 0, 0))
-        char_draw = ImageDraw.Draw(char_img)
-        char_draw.text((10, 10), char, font=font, fill=color)
-        
-        # Apply rotational distortion
-        angle = random.randint(-35, 35)
-        char_img = char_img.rotate(angle, resample=Image.BICUBIC, expand=1)
-        
-        # Randomize Y offset to make characters jump up and down
-        y_offset = random.randint(-15, 15)
-        
-        # Paste onto main image
-        img.paste(char_img, (x_offset, y_offset), char_img)
-        x_offset += random.randint(65, 75)
+        # Draw text directly (no separate image layers)
+        draw.text((x_pos, y_offset), char, font=font, fill=color)
+        x_offset += 50  # Fixed spacing
 
-    # Add a slight blur to obscure readability for bots
-    img = img.filter(ImageFilter.GaussianBlur(radius=0.7))
+    # No blur for speed (optional: add very light blur if needed)
+    # img = img.filter(ImageFilter.GaussianBlur(radius=0.3))
 
     buf = BytesIO()
-    img.save(buf, format="PNG")
+    img.save(buf, format="PNG", optimize=True)  # Add optimization
     return base64.b64encode(buf.getvalue()).decode("utf-8")
 
 
 @app.route("/api/captcha/generate", methods=["GET"])
 @limiter.limit("30 per minute")
 def generate_captcha():
-    """Generate a new image captcha. Returns token + base64 image."""
+    """
+    Generate a new image captcha
+    ---
+    responses:
+      200:
+        description: Captcha generated successfully
+        schema:
+          type: object
+          properties:
+            token:
+              type: string
+              description: Captcha token
+            image:
+              type: string
+              description: Base64 encoded PNG image
+    """
     # 5-character alphanumeric mixed case (excluding ambiguous characters)
     chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789"
     text  = "".join(random.choices(chars, k=5))
@@ -167,7 +182,42 @@ def generate_captcha():
 @app.route("/api/captcha/verify", methods=["POST"])
 @limiter.limit("10 per minute")
 def verify_captcha():
-    """Verify captcha answer. Returns session_token on success."""
+    """
+    Verify captcha answer
+    ---
+    parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          properties:
+            token:
+              type: string
+              description: Captcha token
+            answer:
+              type: string
+              description: User's captcha answer
+    responses:
+      200:
+        description: Captcha verified successfully
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            session_token:
+              type: string
+      400:
+        description: Invalid or expired captcha
+        schema:
+          type: object
+          properties:
+            success:
+              type: boolean
+            msg:
+              type: string
+    """
     data  = request.get_json(silent=True) or {}
     token = bleach.clean(str(data.get("token", "")))
     answer = bleach.clean(str(data.get("answer", ""))).strip()
@@ -205,11 +255,59 @@ def _check_session(req) -> bool:
 
 @app.route("/api/health")
 def health():
+    """
+    Health Check
+    ---
+    responses:
+      200:
+        description: API is running
+    """
     return jsonify({"status": "healthy", "version": "2.0"})
 
 
 @app.route("/api/game/questions", methods=["GET"])
 def get_questions():
+    """
+    Get sorting questions
+    ---
+    parameters:
+      - name: limit
+        in: query
+        type: integer
+        required: false
+        description: Number of questions to return (max 50)
+      - name: category
+        in: query
+        type: string
+        required: false
+        description: Category code (numbers_asc, letters, days)
+      - name: X-Session-Token
+        in: header
+        type: string
+        required: false
+        description: Session token from captcha verification (for testing only)
+    responses:
+      200:
+        description: Questions retrieved successfully
+        schema:
+          type: object
+          properties:
+            questions:
+              type: array
+              items:
+                type: object
+                properties:
+                  category:
+                    type: string
+                  items:
+                    type: array
+                  correct_order:
+                    type: string
+            count:
+              type: integer
+      401:
+        description: Invalid session token
+    """
     if not _check_session(request):
         return jsonify({"msg": "Invalid session. Please complete captcha."}), 401
 
@@ -224,6 +322,53 @@ def get_questions():
 @app.route("/api/game/submit", methods=["POST"])
 @limiter.limit("120 per minute")
 def submit():
+    """
+    Submit sorting answer
+    ---
+    parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          properties:
+            category:
+              type: string
+              description: Category code
+            original_items:
+              type: array
+              items:
+                type: string
+              description: Original unsorted items
+            answer:
+              type: array
+              items:
+                type: string
+              description: User's sorted answer
+      - name: X-Session-Token
+        in: header
+        type: string
+        required: false
+        description: Session token from captcha verification (for testing only)
+    responses:
+      200:
+        description: Answer processed successfully
+        schema:
+          type: object
+          properties:
+            correct:
+              type: boolean
+              description: Whether answer is correct
+            correct_order:
+              type: array
+              items:
+                type: string
+              description: Correct order of items
+      400:
+        description: Invalid request or session
+      401:
+        description: Invalid session token
+    """
     data = request.get_json(silent=True) or {}
 
     if not _check_session(request):

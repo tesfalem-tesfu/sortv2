@@ -1,4 +1,4 @@
-# Sorting Quiz Game — Version 2
+# Sorting Quiz Game — Version 
 
 No login or registration required. Complete an image captcha to play.
 

@@ -1,9 +1,10 @@
 "use client";
-import { useState, useEffect, useCallback, useRef, Suspense } from "react";
+import React, { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
 import { useSearchParams } from "next/navigation";
+import { CSSProperties } from "react";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "https://sortv2-1.onrender.com";
 const QUESTION_TIME = 30;
@@ -130,8 +131,8 @@ function playTone(type, volume = 0.3) {
 }
 
 const ALGO_LABELS = {
-  numbers_asc:    { name:"Free Play",      icon:"🎮", color:"#22d3ee", glow:"rgba(34,211,238,0.4)" },
-  numbers_desc:   { name:"Free Sort",      icon:"🔢", color:"#22d3ee", glow:"rgba(34,211,238,0.4)" },
+  numbers_asc:    { name:"Free Play",      icon:"🎮", color:"#808080", glow:"rgba(128,128,128,0.4)" },
+  numbers_desc:   { name:"Free Sort",      icon:"🔢", color:"#808080", glow:"rgba(128,128,128,0.4)" },
   letters_asc:    { name:"Letters A-Z",    icon:"🔤", color:"#c084fc", glow:"rgba(192,132,252,0.4)" },
   letters_desc:   { name:"Letters Z-A",    icon:"🔤", color:"#c084fc", glow:"rgba(192,132,252,0.4)" },
   days:           { name:"Days of Week",   icon:"📅", color:"#fb923c", glow:"rgba(251,146,60,0.4)" },
@@ -280,7 +281,7 @@ function Game() {
     if(mode==="selection_sort"){const next=[...items];const[picked]=next.splice(selectedIndex,1);next.unshift(picked);setItems(next);setActionMsg(picked+" moved to front");setSelectedIndex(null);}
     else if(mode==="insertion_sort"){if(selectedIndex>0){const next=[...items];[next[selectedIndex-1],next[selectedIndex]]=[next[selectedIndex],next[selectedIndex-1]];setItems(next);setActionMsg("Inserted left");setSelectedIndex(selectedIndex-1);}else{setActionMsg("Already at front!");}}
     else if(mode==="merge_sort"){const next=[...items].sort((a,b)=>Number(a)-Number(b)||a.localeCompare(b));setItems(next);setActionMsg("Merged & sorted!");setSelectedIndex(null);}
-    else if(mode==="quick_sort"){const pivot=items[selectedIndex];const less=items.filter((_,i)=>i!==selectedIndex&&Number(items[i])<=Number(pivot));const greater=items.filter((_,i)=>i!==selectedIndex&&Number(items[i])>Number(pivot));setItems([...less,pivot,...greater]);setPivotIndex(less.length);setActionMsg("Partitioned around "+pivot);setSelectedIndex(null);}
+    else if(mode==="quick_sort"){const pivot=items[selectedIndex];const less=items.filter((_,i)=>i!==selectedIndex&&items[i]<=pivot);const greater=items.filter((_,i)=>i!==selectedIndex&&items[i]>pivot);setItems([...less,pivot,...greater]);setPivotIndex(less.length);setActionMsg("Partitioned around "+pivot);setSelectedIndex(null);}
   };
 
   const exitGame=()=>{sessionStorage.removeItem("session_token");router.replace("/");};
@@ -292,7 +293,7 @@ function Game() {
   const R=28,circ=2*Math.PI*R;
 
   if(loading)return(<div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#0f172a"}}><div style={{width:44,height:44,border:"3px solid rgba(96,165,250,0.2)",borderTopColor:"#60a5fa",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/></div>);
-  if(error||!currentQuestion)return(<div style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"#0f172a",color:"white",gap:16}}><p style={{fontSize:"1.2rem",color:"#f87171"}}>{error||"No questions found"}</p><button onClick={()=>{playTone("click");router.push("/select");}} style={{padding:"10px 28px",borderRadius:50,border:"1px solid #60a5fa",background:"transparent",color:"#60a5fa",cursor:"pointer"}}>Back</button></div>);
+  if(error||!currentQuestion)return(<div style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"#0f172a",color:"white",gap:16}}><p style={{fontSize:"1.2rem",color:"#f87171"}}>{error||"No questions found"}</p><button onClick={()=>{playTone("click");router.push("/select");}} style={{padding:"10px 28px",borderRadius:12,border:"1px solid #666666",background:"#808080",color:"#000000",cursor:"pointer"}}>Back</button></div>);
 
   if(gameOver)return(
     <div style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"#0f172a",padding:24}}>
@@ -300,16 +301,16 @@ function Game() {
         <div style={{fontSize:"3rem",marginBottom:8}}>💀</div>
         <h2 style={{color:"#f87171",fontSize:"2rem",fontWeight:900,marginBottom:24,fontFamily:"Orbitron,sans-serif"}}>GAME OVER</h2>
         <div style={{display:"flex",justifyContent:"center",gap:32,marginBottom:24}}>
-          <div><div style={{fontSize:"0.6rem",color:"#64748b",letterSpacing:"0.2em",marginBottom:4}}>SCORE</div><div style={{fontSize:"2rem",fontWeight:900,color:"#4ade80",fontFamily:"Orbitron,sans-serif"}}>{score}</div></div>
+          <div><div style={{fontSize:"0.6rem",color:"#64748b",letterSpacing:"0.2em",marginBottom:4}}>SCORE</div><div style={{fontSize:"2rem",fontWeight:900,color:"#808080",fontFamily:"Orbitron,sans-serif"}}>{score}</div></div>
           <div><div style={{fontSize:"0.6rem",color:"#64748b",letterSpacing:"0.2em",marginBottom:4}}>BEST</div><div style={{fontSize:"2rem",fontWeight:900,color:"#facc15",fontFamily:"Orbitron,sans-serif"}}>{highScore}</div></div>
           <div><div style={{fontSize:"0.6rem",color:"#64748b",letterSpacing:"0.2em",marginBottom:4}}>ROUNDS</div><div style={{fontSize:"2rem",fontWeight:900,color:"#60a5fa",fontFamily:"Orbitron,sans-serif"}}>{totalAnswered}</div></div>
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:10}}>
-          <button onClick={()=>{playTone("click");window.location.reload();}} style={{padding:"13px",borderRadius:50,border:"none",background:"linear-gradient(135deg,"+algoInfo.color+",#60a5fa)",color:"white",fontFamily:"Orbitron,sans-serif",fontWeight:700,fontSize:"0.8rem",cursor:"pointer"}}>PLAY AGAIN</button>
+          <button onClick={()=>{playTone("click");window.location.reload();}} style={{padding:"13px",borderRadius:12,border:"1px solid #666666",background:"#808080",color:"#000000",fontFamily:"Orbitron,sans-serif",fontWeight:700,fontSize:"0.8rem",cursor:"pointer"}}>PLAY AGAIN</button>
           <div style={{display:"flex",gap:10}}>
-            <button onClick={()=>{playTone("click");shareScore();}} style={{flex:1,padding:"10px",borderRadius:50,border:"1px solid "+algoInfo.color,background:"transparent",color:algoInfo.color,fontFamily:"Orbitron,sans-serif",fontSize:"0.68rem",cursor:"pointer"}}>SHARE</button>
-            <button onClick={()=>{playTone("click");router.push("/select");}} style={{flex:1,padding:"10px",borderRadius:50,border:"1px solid rgba(255,255,255,0.15)",background:"transparent",color:"#94a3b8",fontFamily:"Orbitron,sans-serif",fontSize:"0.68rem",cursor:"pointer"}}>MODES</button>
-            <button onClick={()=>{playTone("click");exitGame();}} style={{flex:1,padding:"10px",borderRadius:50,border:"1px solid #f87171",background:"transparent",color:"#f87171",fontFamily:"Orbitron,sans-serif",fontSize:"0.68rem",cursor:"pointer"}}>🚪 Logout</button>
+            <button onClick={()=>{playTone("click");shareScore();}} style={{flex:1,padding:"10px",borderRadius:12,border:"1px solid #666666",background:"#808080",color:"#000000",fontFamily:"Orbitron,sans-serif",fontSize:"0.68rem",cursor:"pointer"}}>SHARE</button>
+            <button onClick={()=>{playTone("click");router.push("/select");}} style={{flex:1,padding:"10px",borderRadius:12,border:"1px solid #666666",background:"#808080",color:"#000000",fontFamily:"Orbitron,sans-serif",fontSize:"0.68rem",cursor:"pointer"}}>MODES</button>
+            <button onClick={()=>{playTone("click");exitGame();}} style={{flex:1,padding:"10px",borderRadius:12,border:"1px solid #666666",background:"#808080",color:"#000000",fontFamily:"Orbitron,sans-serif",fontSize:"0.68rem",cursor:"pointer"}}>🚪 Logout</button>
           </div>
         </div>
       </motion.div>
@@ -385,26 +386,26 @@ function Game() {
           <div style={{ 
             background:"#000", 
             border:"2px solid #00FFFF", 
-            borderRadius:0, 
+            borderRadius:12, 
             padding:"10px 20px", 
             fontSize:"clamp(0.9rem, 3vw, 1.3rem)", 
             fontWeight:"bold", 
             color:"#00FFFF", 
             fontFamily:"'Courier New', monospace",
-            boxShadow:"0 0 20px rgba(0,255,255,0.6)"
+            boxShadow:"0 0 15px rgba(0,255,255,0.5)"
           }}>
             {algoInfo.icon} {algoInfo.name}
           </div>
           <div style={{ 
             background:"#000", 
-            border:"2px solid #FF00FF", 
-            borderRadius:0, 
+            border:"2px solid #666666", 
+            borderRadius:12, 
             padding:"8px 15px", 
             fontSize:"clamp(0.8rem, 2.5vw, 1rem)", 
             fontWeight:"bold", 
-            color:"#FF00FF", 
+            color:"#808080", 
             fontFamily:"'Courier New', monospace",
-            boxShadow:"0 0 15px rgba(255,0,255,0.5)"
+            boxShadow:"0 0 15px rgba(128,128,128,0.5)"
           }}>
             Level: {Math.floor(totalAnswered / 5) + 1}
           </div>
@@ -412,42 +413,34 @@ function Game() {
         
         <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap", order:2 }}>
           <button onClick={()=>{playTone("click");router.push("/select");}} style={{ 
-            background:"#FFFF00", 
-            border:"3px solid #FFFF00", 
-            borderRadius:0, 
+            background:"#808080", 
+            border:"2px solid #666666", 
+            borderRadius:12, 
             padding:"12px 20px", 
             fontFamily:"Orbitron,sans-serif",
             fontWeight:700,
             fontSize:"0.9rem",
-            color:"#000",
+            color:"#000000",
             cursor:"pointer",
-            boxShadow:"0 0 20px rgba(255,255,0,0.6)",
+            boxShadow:"0 0 15px rgba(128,128,128,0.5)",
             minWidth:"120px"
           }}>🚪 FREE PLAY</button>
-          <button onClick={()=>{playTone("click");setSoundEnabled(!soundEnabled);}} style={{ 
-            padding:"8px 15px", 
-            borderRadius:0, 
-            border:"2px solid " + (soundEnabled ? "#00FF00" : "#FF0000"), 
-            background:"transparent",
-            color: soundEnabled ? "#00FF00" : "#FF0000",
-            fontFamily:"'Courier New', monospace",
-            fontWeight:900,
-            fontSize:"0.7rem",
+          <span onClick={()=>{playTone("click");setSoundEnabled(!soundEnabled);}} style={{ 
             cursor:"pointer",
-            boxShadow:"0 0 15px " + (soundEnabled ? "rgba(0,255,0,0.5)" : "rgba(255,0,0,0.5)"),
-            transition:"all 0.3s ease"
-          }}>{soundEnabled ? "🔊 ON" : "🔇 OFF"}</button>
+            fontSize:"1.2rem",
+            userSelect:"none"
+          }}>{soundEnabled ? "🔊" : "🔇"}</span>
           <button onClick={()=>{playTone("click");exitGame();}} style={{ 
             padding:"8px 15px", 
-            borderRadius:0, 
-            border:"2px solid #FF0000", 
-            background:"transparent",
-            color:"#FF0000",
+            borderRadius:12, 
+            border:"2px solid #666666", 
+            background:"#808080",
+            color:"#000000",
             fontFamily:"'Courier New', monospace",
             fontWeight:900,
             fontSize:"0.7rem",
             cursor:"pointer",
-            boxShadow:"0 0 15px rgba(255,0,0,0.5)",
+            boxShadow:"0 0 15px rgba(128,128,128,0.5)",
             transition:"all 0.3s ease"
           }}>🚪 LOGOUT</button>
         </div>
@@ -501,14 +494,14 @@ function Game() {
                   display:"inline-block", 
                   background:"#000", 
                   border:"2px solid #00FFFF", 
-                  borderRadius:0, 
+                  borderRadius:12, 
                   padding:"12px 20px", 
                   maxWidth:"90%", 
                   fontSize:"clamp(0.8rem, 2.5vw, 1rem)", 
                   fontWeight:"bold", 
                   color:"#00FFFF", 
                   fontFamily:"'Courier New', monospace",
-                  boxShadow:"0 0 15px rgba(0,255,255,0.5)",
+                  boxShadow:"0 0 15px rgba(0,255,255,0.3)",
                   textShadow:"0 0 5px #00FFFF",
                   wordBreak:"break-word"
                 }}>
@@ -523,7 +516,7 @@ function Game() {
                     gap:10, 
                     background:"#000", 
                     border:"1px solid #00FFFF", 
-                    borderRadius:0, 
+                    borderRadius:12, 
                     padding:"8px 20px", 
                     fontSize:"0.8rem", 
                     color:"#00FFFF",
@@ -533,7 +526,7 @@ function Game() {
                       ? <span style={{ color:"#00FF00", fontWeight:"bold" }}>► {actionMsg.toUpperCase()}</span>
                       : <span>Sort the items in correct order</span>}
                     {selectedIndex !== null && (
-                      <button onClick={() => { playTone("click"); setSelectedIndex(null); setActionMsg(""); }} style={{ background:"none", border:"1px solid #FF0000", color:"#FF0000", cursor:"pointer", fontSize:"1rem", padding:"5px", fontFamily:"'Courier New', monospace" }}>✕</button>
+                      <button onClick={() => { playTone("click"); setSelectedIndex(null); setActionMsg(""); }} style={{ background:"#808080", border:"1px solid #666666", color:"#000000", cursor:"pointer", fontSize:"1rem", padding:"5px", fontFamily:"'Courier New', monospace", borderRadius:8 }}>×</button>
                     )}
                   </div>
                 )}
@@ -572,18 +565,18 @@ function Game() {
                         position:"relative", 
                         background:bg, 
                         border, 
-                        borderRadius:0, 
+                        borderRadius:8, 
                         padding:"10px 15px", 
                         minWidth:50, 
                         textAlign:"center", 
-                        cursor: feedback ? "default" : "pointer", 
+                        cursor:"pointer", 
                         userSelect:"none", 
-                        boxShadow:shadow, 
                         transition:"all 0.2s", 
-                        fontSize:"1rem", 
-                        fontWeight:"bold",
                         fontFamily:"'Courier New', monospace",
-                        color:textColor
+                        fontWeight:900,
+                        fontSize:"1.1rem",
+                        color:textColor, 
+                        boxShadow:selectedIndex === index ? "0 0 20px " + textColor : "0 0 10px " + textColor
                       }}>
                       {/* position badge */}
                       <div style={{ 
@@ -592,19 +585,18 @@ function Game() {
                         left:-8, 
                         width:16, 
                         height:16, 
-                        borderRadius:0, 
+                        borderRadius:4, 
                         background:"#FF00FF", 
                         color:"#000", 
                         fontSize:"0.6rem", 
                         fontWeight:900, 
                         display:"flex", 
                         alignItems:"center", 
-                        justifyContent:"center", 
-                        fontFamily:"'Courier New', monospace",
+                        justifyContent:"center",
                         border:"1px solid #FF00FF"
                       }}>{index + 1}</div>
                       <span style={{ fontSize:"1.1rem", fontWeight:900, fontFamily:"'Courier New', monospace" }}>{displayItem}</span>
-                      {isPivot && <div style={{ position:"absolute", top:-10, left:"50%", transform:"translateX(-50%)", background:"#FFFF00", color:"#000", fontSize:"0.6rem", fontWeight:900, padding:"2px 4px", borderRadius:0, fontFamily:"'Courier New', monospace", border:"1px solid #FFFF00" }}>PIVOT</div>}
+                      {isPivot && <div style={{ position:"absolute", top:-10, left:"50%", transform:"translateX(-50%)", background:"#FFFF00", color:"#000", fontSize:"0.6rem", fontWeight:900, padding:"2px 4px", borderRadius:4, fontFamily:"'Courier New', monospace", border:"1px solid #FFFF00" }}>PIVOT</div>}
                       {isCorrect && <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"1.2rem", background:"rgba(0,255,0,0.8)", color:"#00FF00", fontFamily:"'Courier New', monospace", fontWeight:"bold" }}>✓</div>}
                     </motion.div>
                   );
@@ -624,47 +616,47 @@ function Game() {
                         onClick={() => { if (selectedIndex === null) return; const next = [...items]; const sw = selectedIndex < items.length - 1 ? selectedIndex + 1 : selectedIndex - 1; [next[selectedIndex], next[sw]] = [next[sw], next[selectedIndex]]; setItems(next); setActionMsg("SWAPPED!"); setSelectedIndex(null); playTone("drop");}}
                         style={{ 
                           padding:"10px 20px", 
-                          borderRadius:0, 
-                          border:"2px solid #00FFFF", 
-                          background:selectedIndex !== null ? "#00FFFF" : "#000", 
-                          color:selectedIndex !== null ? "#000" : "#00FFFF", 
+                          borderRadius:12, 
+                          border:"2px solid #666666", 
+                          background:selectedIndex !== null ? "#696969" : "#808080", 
+                          color:"#000000", 
                           fontWeight:"bold", 
                           fontSize:"0.9rem", 
                           cursor: selectedIndex !== null ? "pointer" : "default", 
                           transition:"all 0.2s", 
                           fontFamily:"'Courier New', monospace",
-                          boxShadow:selectedIndex !== null ? "0 0 15px rgba(0,255,255,0.8)" : "0 0 10px rgba(0,255,255,0.3)"
+                          boxShadow:selectedIndex !== null ? "0 0 15px rgba(128,128,128,0.8)" : "0 0 10px rgba(128,128,128,0.3)"
                         }}>🔄 SWAP</button>
                       <button disabled={selectedIndex === null}
                         onClick={() => { if (selectedIndex === null) return; setActionMsg("PASSED!"); setSelectedIndex(null); playTone("shuffle");}}
                         style={{ 
                           padding:"10px 20px", 
-                          borderRadius:0, 
-                          border:"2px solid #FF00FF", 
-                          background:selectedIndex !== null ? "#FF00FF" : "#000", 
-                          color:selectedIndex !== null ? "#000" : "#FF00FF", 
+                          borderRadius:12, 
+                          border:"2px solid #666666", 
+                          background:selectedIndex !== null ? "#696969" : "#808080", 
+                          color:"#000000", 
                           fontWeight:"bold", 
                           fontSize:"0.9rem", 
                           cursor: selectedIndex !== null ? "pointer" : "default", 
                           transition:"all 0.2s", 
                           fontFamily:"'Courier New', monospace",
-                          boxShadow:selectedIndex !== null ? "0 0 15px rgba(255,0,255,0.8)" : "0 0 10px rgba(255,0,255,0.3)"
+                          boxShadow:selectedIndex !== null ? "0 0 15px rgba(128,128,128,0.8)" : "0 0 10px rgba(128,128,128,0.3)"
                         }}>⏭ PASS</button>
                     </>
                   ) : (
                     <button disabled={selectedIndex === null} onClick={handleAction}
                       style={{ 
                         padding:"10px 20px", 
-                        borderRadius:0, 
-                        border:"2px solid #00FFFF", 
-                        background:selectedIndex !== null ? "#00FFFF" : "#000", 
-                        color:selectedIndex !== null ? "#000" : "#00FFFF", 
+                        borderRadius:12, 
+                        border:"2px solid #666666", 
+                        background:selectedIndex !== null ? "#696969" : "#808080", 
+                        color:"#000000", 
                         fontWeight:"bold", 
                         fontSize:"0.9rem", 
                         cursor: selectedIndex !== null ? "pointer" : "default", 
                         transition:"all 0.2s", 
                         fontFamily:"'Courier New', monospace",
-                        boxShadow:selectedIndex !== null ? "0 0 15px rgba(0,255,255,0.8)" : "0 0 10px rgba(0,255,255,0.3)"
+                        boxShadow:selectedIndex !== null ? "0 0 15px rgba(128,128,128,0.8)" : "0 0 10px rgba(128,128,128,0.3)"
                       }}>{algoAction.actionBtn}</button>
                   )}
                 </div>
@@ -684,26 +676,26 @@ function Game() {
                   onClick={() => { if (currentIndex > 0 && !isLocked) { playTone("click"); setCurrentIndex((p: number) => p - 1); } }}
                   style={{ 
                     padding:"clamp(8px, 2vw, 12px) clamp(15px, 4vw, 25px)", 
-                    borderRadius:0, 
-                    border:"2px solid rgb(30, 231, 30)", 
-                    background:currentIndex === 0 || isLocked ? "#333" : "#000", 
-                    color:currentIndex === 0 || isLocked ? "#666" : "#00FF00", 
+                    borderRadius:12, 
+                    border:"2px solid #666666", 
+                    background:currentIndex === 0 || isLocked ? "#a9a9a9" : "#808080", 
+                    color:"#000000", 
                     fontWeight:"bold", 
                     fontSize:"clamp(0.7rem, 2.5vw, 0.9rem)", 
                     cursor: currentIndex === 0 || isLocked ? "default" : "pointer", 
                     transition:"all 0.2s", 
                     fontFamily:"'Courier New', monospace",
-                    boxShadow:currentIndex === 0 || isLocked ? "none" : "0 0 15px rgba(0,255,0,0.8)",
+                    boxShadow:currentIndex === 0 || isLocked ? "none" : "0 0 15px rgba(128,128,128,0.8)",
                     flex:"0 0 auto",
                     minWidth:"80px"
                   }}>◄ PREV</button>
                 <button ref={submitBtnRef} disabled={isLocked} onClick={()=>{playTone("click");submit();}}
                   style={{ 
                     padding:"clamp(10px, 2.5vw, 15px) clamp(25px, 6vw, 50px)", 
-                    borderRadius:0, 
-                    border:"2px solid #FFFF00", 
-                    background:isLocked ? "#333" : "#FFFF00", 
-                    color:isLocked ? "#666" : "#000", 
+                    borderRadius:12, 
+                    border:"2px solid #666666", 
+                    background:isLocked ? "#a9a9a9" : "#FFFF00", 
+                    color:"#000000", 
                     fontWeight:"bold", 
                     fontSize:"clamp(0.8rem, 3vw, 1rem)", 
                     cursor:isLocked ? "default" : "pointer", 
@@ -724,16 +716,16 @@ function Game() {
                   }}
                   style={{ 
                     padding:"clamp(8px, 2vw, 12px) clamp(15px, 4vw, 25px)", 
-                    borderRadius:0, 
-                    border:"2px solid #FF00FF", 
-                    background:"#000", 
-                    color:"#FF00FF", 
+                    borderRadius:12, 
+                    border:"2px solid #666666", 
+                    background:"#808080", 
+                    color:"#000000", 
                     fontWeight:"bold", 
                     fontSize:"clamp(0.7rem, 2.5vw, 0.9rem)", 
                     cursor:"pointer", 
                     transition:"all 0.2s", 
                     fontFamily:"'Courier New', monospace",
-                    boxShadow:"0 0 15px rgba(255,0,255,0.8)",
+                    boxShadow:"0 0 15px rgba(128,128,128,0.8)",
                     flex:"0 0 auto",
                     minWidth:"80px"
                   }}>NEXT ►</button>
@@ -757,13 +749,17 @@ function Game() {
               height: "clamp(50px, 8vw, 60px)", 
               background:"#000", 
               border:"2px solid #00FFFF", 
-              borderRadius:0, 
+              borderRadius:12, 
               display:"flex", 
               alignItems:"center", 
               justifyContent:"center", 
+              fontFamily:"'Courier New', monospace",
+              fontWeight:900,
+              fontSize:"clamp(1rem, 3vw, 1.4rem)", 
+              color:timerColor,
+              boxShadow:"0 0 20px " + timerColor,
               position:"relative", 
-              boxShadow:"0 0 20px rgba(0,255,255,0.5)",
-              margin:"0 auto"
+              overflow:"hidden"
             }}>
               <div style={{ 
                 position:"absolute", 
@@ -777,8 +773,8 @@ function Game() {
               <div style={{ 
                 position:"relative", 
                 zIndex:1, 
-                fontSize: "clamp(1rem, 3vw, 1.2rem)", 
-                fontWeight:"bold", 
+                fontSize: "clamp(1rem, 3vw, 1.4rem)", 
+                fontWeight:900, 
                 color:timerColor,
                 fontFamily:"'Courier New', monospace",
                 textShadow:`0 0 10px ${timerColor}`
@@ -789,18 +785,22 @@ function Game() {
               color:"#00FFFF", 
               fontFamily:"'Courier New', monospace", 
               textAlign:"center",
-              fontWeight:"bold"
+              fontWeight:"bold",
+              borderRadius:12,
+              padding:"5px 10px",
+              border:"2px solid #00FFFF",
+              boxShadow:"0 0 15px rgba(0,255,255,0.3)"
             }}>TIMER</div>
             <div style={{ 
               background:"#000", 
-              border:"2px solid #FF00FF", 
-              borderRadius:0, 
+              border:"2px solid #666666", 
+              borderRadius:12, 
               padding:"10px 20px", 
               fontSize: "clamp(0.9rem, 2.5vw, 1.1rem)", 
               fontWeight:"bold", 
-              color:"#FF00FF", 
+              color:"#808080", 
               fontFamily:"'Courier New', monospace",
-              boxShadow:"0 0 20px rgba(255,0,255,0.6)",
+              boxShadow:"0 0 15px rgba(128,128,128,0.3)",
               textAlign:"center",
               minWidth: "clamp(150px, 25vw, 200px)"
             }}>
@@ -808,16 +808,18 @@ function Game() {
             </div>
             
             {/* ── GAME STATUS ── */}
-            <div style={{ 
-              textAlign:"center", 
-              padding:"8px 12px", 
-              margin:"10px 0",
-              background:"rgba(0,0,0,0.8)", 
-              border:"2px solid #00FFFF", 
-              borderRadius:0,
-              boxShadow:"0 0 15px rgba(0,255,255,0.3)",
-              minWidth: "clamp(150px, 25vw, 200px)"
-            }}>
+            <div style={ 
+              {
+                textAlign:"center", 
+                padding:"8px 12px", 
+                margin:"10px 0",
+                background:"rgba(0,0,0,0.8)", 
+                border:"2px solid #00FFFF", 
+                borderRadius:12,
+                boxShadow:"0 0 15px rgba(0,255,255,0.3)",
+                minWidth: "clamp(150px, 25vw, 200px)"
+              } as CSSProperties
+            }>
               <div style={{ 
                 fontSize: "clamp(0.7rem, 2vw, 0.8rem)", 
                 fontWeight:"bold", 
@@ -825,7 +827,7 @@ function Game() {
                 fontFamily:"'Courier New', monospace",
                 marginBottom:"3px"
               }}>
-                STATUS: {gameOver ? "🏁 GAME OVER" : loading ? "⏳ LOADING" : questionLoading ? "🔄 PROCESSING" : "🎮 PLAYING"}
+                STATUS: {gameOver ? "GAME OVER" : loading ? "LOADING" : questionLoading ? "PROCESSING" : "PLAYING"}
               </div>
               <div style={{ 
                 fontSize: "clamp(0.6rem, 1.8vw, 0.7rem)", 
@@ -838,26 +840,33 @@ function Game() {
           </div>
         </div>
 
-      {/* ── FEEDBACK BANNER ── */}
+      {/* ---- FEEDBACK BANNER ---- */}
       <AnimatePresence>
         {feedback && (
-          <motion.div initial={{ opacity:0, y:30 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-20 }}
-            style={{ 
-              position:"relative", 
+          <motion.div 
+            initial={{ opacity:0, y:30 }} 
+            animate={{ opacity:1, y:0 }} 
+            exit={{ opacity:0, y:-20 }}
+            style={{
+              position:"fixed", 
+              top:20, 
+              left:"50%", 
+              transform:"translateX(-50%)", 
               zIndex:1, 
               margin:"0 10px 15px", 
               padding:"12px 20px", 
-              borderRadius:0, 
+              borderRadius:12, 
               textAlign:"center", 
               fontWeight:800, 
               fontSize:"clamp(0.9rem, 3vw, 1.05rem)", 
-              color: feedback === "correct" ? "white" : "#FF0000", 
-              background: feedback === "correct" ? "rgba(0,255,0,0.3)" : "rgba(0,0,0,0.9)", 
-              border: feedback === "correct" ? "2px solid #00FF00" : "2px solid #FF0000", 
-              boxShadow: feedback === "correct" ? "0 0 30px rgba(0,255,0,0.4)" : "0 0 30px rgba(255,0,0,0.6)",
-              maxWidth:"90%"
-            }}>
-            {feedback === "correct" ? "🎉 CORRECT! +10 POINTS" : "❌ WRONG — CORRECT ORDER SHOWN ABOVE ↑"}
+              color:"#fff", 
+              fontFamily:"'Courier New', monospace",
+              background: feedback === "correct" ? "rgba(34,197,94,0.9)" : "rgba(239,68,68,0.9)",
+              border: "2px solid " + (feedback === "correct" ? "#22c55e" : "#ef4444"),
+              boxShadow: "0 0 20px " + (feedback === "correct" ? "rgba(34,197,94,0.5)" : "rgba(239,68,68,0.5)")
+            }}
+          >
+            {feedback === "correct" ? "CORRECT!" : "WRONG!"}
           </motion.div>
         )}
       </AnimatePresence>
